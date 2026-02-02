@@ -11,25 +11,25 @@
   --black:#000;
   --gray:#666;
   --bg:#fff;
+  --soft:#f8f8f8;
 }
 
 *{box-sizing:border-box}
 
+html{scroll-behavior:smooth}
+
 body{
   margin:0;
-  font-family:Arial,sans-serif;
+  font-family:"Helvetica Neue",Arial,sans-serif;
   background:var(--bg);
   color:var(--black);
   animation:fadeIn 1s ease;
 }
 
-@keyframes fadeIn{
-  from{opacity:0}
-  to{opacity:1}
-}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
 
 header{
-  padding:40px 20px;
+  padding:40px 20px 30px;
   text-align:center;
   border-bottom:3px solid var(--gold);
 }
@@ -38,38 +38,85 @@ header h1{
   margin:0;
   font-family:"Times New Roman",serif;
   letter-spacing:6px;
-  font-size:42px;
+  font-size:44px;
+}
+
+nav{
+  margin-top:15px;
 }
 
 nav a{
-  margin:0 10px;
+  margin:0 12px;
   text-decoration:none;
   color:var(--black);
   font-weight:bold;
+  position:relative;
 }
 
+nav a::after{
+  content:"";
+  position:absolute;
+  bottom:-4px;
+  left:0;
+  width:0;
+  height:2px;
+  background:var(--gold);
+  transition:.3s;
+}
+
+nav a:hover::after{width:100%}
+
 .container{
-  max-width:1200px;
+  max-width:1250px;
   margin:auto;
   padding:50px 20px;
 }
 
 .hidden{display:none}
 
+/* SEARCH */
+.search-box{
+  max-width:500px;
+  margin:30px auto 0;
+}
+
+.search-box input{
+  width:100%;
+  padding:14px;
+  font-size:16px;
+  border:2px solid #ddd;
+}
+
+.search-results{
+  background:#fff;
+  border:1px solid #ddd;
+  max-height:300px;
+  overflow:auto;
+}
+
+.search-results div{
+  padding:10px;
+  cursor:pointer;
+}
+
+.search-results div:hover{
+  background:var(--soft);
+}
+
 /* HOME */
 .editions{
   display:flex;
   gap:30px;
-  margin-top:40px;
+  margin-top:50px;
 }
 
 .edition-card{
   flex:1;
-  padding:60px;
+  padding:70px;
   text-align:center;
   border:2px solid var(--black);
   cursor:pointer;
-  font-size:28px;
+  font-size:30px;
   font-weight:bold;
   transition:.4s;
 }
@@ -77,44 +124,45 @@ nav a{
 .edition-card:hover{
   background:var(--gold);
   color:#fff;
-  transform:translateY(-8px);
+  transform:translateY(-10px);
+  box-shadow:0 10px 25px rgba(0,0,0,.15);
 }
 
 /* CATEGORY */
 .category{
-  margin-bottom:60px;
-  animation:slideUp .6s ease both;
-}
-
-@keyframes slideUp{
-  from{opacity:0;transform:translateY(30px)}
-  to{opacity:1;transform:none}
+  margin-bottom:70px;
 }
 
 .category h2{
+  font-family:"Times New Roman",serif;
   border-bottom:2px solid var(--gold);
   padding-bottom:10px;
-  font-family:"Times New Roman",serif;
 }
 
 /* NOMINEE */
 .nominee{
   display:flex;
   align-items:center;
-  gap:15px;
-  padding:12px;
-  margin:10px 0;
+  gap:16px;
+  padding:14px;
+  margin:12px 0;
   border-left:4px solid transparent;
-  transition:.3s;
+  background:#fff;
+  animation:stagger .5s ease both;
+}
+
+@keyframes stagger{
+  from{opacity:0;transform:translateY(20px)}
+  to{opacity:1}
 }
 
 .nominee:hover{
-  background:#f4f4f4;
+  background:var(--soft);
 }
 
 .nominee img{
-  width:48px;
-  height:48px;
+  width:52px;
+  height:52px;
   border-radius:50%;
   object-fit:cover;
   border:2px solid var(--gold);
@@ -123,6 +171,12 @@ nav a{
 .nominee a{
   text-decoration:none;
   color:var(--black);
+  font-weight:500;
+}
+
+.feature{
+  color:var(--gray);
+  font-size:14px;
 }
 
 .winner{
@@ -132,10 +186,10 @@ nav a{
 }
 
 .badge{
-  margin-left:10px;
+  margin-left:auto;
   font-size:12px;
-  padding:4px 8px;
-  border-radius:12px;
+  padding:4px 10px;
+  border-radius:20px;
 }
 
 .badge.winner{background:var(--gold);color:#fff}
@@ -144,29 +198,33 @@ nav a{
 /* ARTIST */
 .artist-profile{
   display:flex;
-  gap:30px;
+  gap:35px;
   align-items:center;
   margin-bottom:40px;
-  animation:fadeIn .8s ease;
 }
 
 .artist-profile img{
-  width:180px;
-  height:180px;
+  width:200px;
+  height:200px;
   border-radius:50%;
   border:4px solid var(--gold);
   object-fit:cover;
 }
 
-.artist-section h3{
-  margin-top:40px;
-  border-bottom:1px solid var(--gold);
-  padding-bottom:5px;
+.stats{
+  display:flex;
+  gap:20px;
+  margin-top:15px;
+}
+
+.stat{
+  padding:10px 18px;
+  border:1px solid #ddd;
 }
 
 footer{
   text-align:center;
-  padding:30px;
+  padding:35px;
   border-top:1px solid #ddd;
   color:var(--gray);
 }
@@ -180,6 +238,11 @@ footer{
   <nav>
     <a href="#" onclick="showHome()">Home</a>
   </nav>
+
+  <div class="search-box">
+    <input id="search" placeholder="Search artists or items..." oninput="searchAll(this.value)">
+    <div id="results" class="search-results hidden"></div>
+  </div>
 </header>
 
 <section id="home" class="container">
@@ -198,13 +261,11 @@ footer{
 <section id="artist" class="container hidden">
   <div id="artistProfile"></div>
 
-  <div class="artist-section">
-    <h3>🏆 Wins</h3>
-    <div id="artistWins"></div>
+  <h3>🏆 Wins</h3>
+  <div id="artistWins"></div>
 
-    <h3>🎖️ Nominations</h3>
-    <div id="artistNominations"></div>
-  </div>
+  <h3>🎖️ Nominations</h3>
+  <div id="artistNominations"></div>
 </section>
 
 <footer>© Daegon Awards</footer>
@@ -215,26 +276,24 @@ const editions={
   2018:{sheetId:"1DNb6uYi6K231-fhrSt3XPlaag8eG9ZFVHhvSXyjWCuk",gid:"912023648"}
 };
 
+let globalIndex=[];
+
 function hideAll(){
   document.querySelectorAll("section").forEach(s=>s.classList.add("hidden"));
 }
 function showHome(){
-  hideAll();
-  home.classList.remove("hidden");
+  hideAll(); home.classList.remove("hidden");
 }
 
 function fetchSheet(id,gid){
-  const url=`https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:json&gid=${gid}`;
-  return fetch(url)
+  return fetch(`https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:json&gid=${gid}`)
     .then(r=>r.text())
     .then(t=>JSON.parse(t.substring(47).slice(0,-2)));
 }
 
-function getArtists(main,feature){
+function parseArtists(main,feature){
   let list=[main];
-  if(feature){
-    feature.split(",").forEach(a=>list.push(a.trim()));
-  }
+  if(feature) feature.split(",").forEach(a=>list.push(a.trim()));
   return list.filter(Boolean);
 }
 
@@ -243,6 +302,36 @@ function artistImage(name){
     .then(r=>r.json())
     .then(d=>d.thumbnail?.source||"");
 }
+
+/* SEARCH */
+function searchAll(q){
+  const res=document.getElementById("results");
+  res.innerHTML="";
+  if(!q){res.classList.add("hidden");return}
+  res.classList.remove("hidden");
+
+  globalIndex.filter(i=>i.text.toLowerCase().includes(q.toLowerCase()))
+    .slice(0,15)
+    .forEach(i=>{
+      const d=document.createElement("div");
+      d.innerText=i.text;
+      d.onclick=()=>openArtist(encodeURIComponent(i.artist));
+      res.appendChild(d);
+    });
+}
+
+/* LOAD INDEX */
+Object.keys(editions).forEach(y=>{
+  fetchSheet(editions[y].sheetId,editions[y].gid).then(data=>{
+    data.table.rows.forEach(r=>{
+      const item=r.c[1]?.v||"";
+      const artist=r.c[2]?.v;
+      parseArtists(artist,r.c[3]?.v).forEach(a=>{
+        globalIndex.push({artist:a,text:`${a} ${item}`});
+      });
+    });
+  });
+});
 
 /* EDITION */
 function openEdition(year){
@@ -255,51 +344,50 @@ function openEdition(year){
     const cats={};
 
     data.table.rows.forEach(r=>{
-      const category=r.c[0]?.v;
+      const c=r.c[0]?.v;
       const item=r.c[1]?.v;
       const artist=r.c[2]?.v;
       const feature=r.c[3]?.v;
       const status=r.c[4]?.v;
-
-      if(!cats[category]) cats[category]=[];
-      cats[category].push({item,artist,feature,status});
+      if(!cats[c]) cats[c]=[];
+      cats[c].push({item,artist,feature,status});
     });
 
     for(const c in cats){
-      const div=document.createElement("div");
-      div.className="category";
-      div.innerHTML=`<h2>${c}</h2>`;
+      const block=document.createElement("div");
+      block.className="category";
+      block.innerHTML=`<h2>${c}</h2>`;
 
-      cats[c].forEach(async n=>{
-        const img=await artistImage(n.artist);
-        const text=(!n.item||n.item==="-"?n.artist:`${n.item} — ${n.artist}`);
+      cats[c].sort((a,b)=>(b.status==="Winner")-(a.status==="Winner"))
+        .forEach(async n=>{
+          const img=await artistImage(n.artist);
+          const text=(!n.item||n.item==="-"?n.artist:`${n.item} — ${n.artist}`);
+          const row=document.createElement("div");
+          row.className="nominee"+(n.status==="Winner"?" winner":"");
+          row.innerHTML=`
+            <img loading="lazy" src="${img}">
+            <div>
+              <a href="#" onclick="openArtist('${encodeURIComponent(n.artist)}')">${text}</a>
+              ${n.feature?`<div class="feature">feat. ${n.feature}</div>`:""}
+            </div>
+            <span class="badge ${n.status==="Winner"?"winner":"nominated"}">
+              ${n.status==="Winner"?"Winner":"Nominated"}
+            </span>`;
+          block.appendChild(row);
+        });
 
-        const row=document.createElement("div");
-        row.className="nominee"+(n.status==="Winner"?" winner":"");
-        row.innerHTML=`
-          <img src="${img}">
-          <a href="#" onclick="openArtist('${encodeURIComponent(n.artist)}')">
-            ${text}
-          </a>
-          <span class="badge ${n.status==="Winner"?"winner":"nominated"}">
-            ${n.status==="Winner"?"Winner":"Nominated"}
-          </span>`;
-        div.appendChild(row);
-      });
-
-      categories.appendChild(div);
+      categories.appendChild(block);
     }
   });
 }
 
 /* ARTIST */
-function openArtist(encoded){
-  const name=decodeURIComponent(encoded);
-  hideAll();
-  artist.classList.remove("hidden");
-  artistProfile.innerHTML="";
-  artistWins.innerHTML="";
-  artistNominations.innerHTML="";
+function openArtist(enc){
+  const name=decodeURIComponent(enc);
+  hideAll(); artist.classList.remove("hidden");
+  artistProfile.innerHTML=""; artistWins.innerHTML=""; artistNominations.innerHTML="";
+
+  let wins=0, noms=0;
 
   artistImage(name).then(img=>{
     fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(name)}`)
@@ -311,28 +399,30 @@ function openArtist(encoded){
             <div>
               <h2>${name}</h2>
               <p>${d.extract||"Artist profile."}</p>
+              <div class="stats">
+                <div class="stat" id="wCount">Wins: 0</div>
+                <div class="stat" id="nCount">Nominations: 0</div>
+              </div>
             </div>
           </div>`;
       });
   });
 
-  Object.keys(editions).forEach(year=>{
-    fetchSheet(editions[year].sheetId,editions[year].gid).then(data=>{
+  Object.keys(editions).forEach(y=>{
+    fetchSheet(editions[y].sheetId,editions[y].gid).then(data=>{
       data.table.rows.forEach(r=>{
-        const category=r.c[0]?.v;
-        const item=r.c[1]?.v;
-        const artist=r.c[2]?.v;
-        const feature=r.c[3]?.v;
-        const status=r.c[4]?.v;
-
-        const artists=getArtists(artist,feature);
+        const artists=parseArtists(r.c[2]?.v,r.c[3]?.v);
         if(!artists.includes(name)) return;
 
         const div=document.createElement("div");
-        div.className="nominee"+(status==="Winner"?" winner":"");
-        div.innerHTML=`<strong>${year}</strong> — ${category}<br>${item||name}`;
+        div.className="nominee"+(r.c[4]?.v==="Winner"?" winner":"");
+        div.innerHTML=`<strong>${y}</strong> — ${r.c[0]?.v}<br>${r.c[1]?.v||name}`;
 
-        (status==="Winner"?artistWins:artistNominations).appendChild(div);
+        if(r.c[4]?.v==="Winner"){wins++; artistWins.appendChild(div);}
+        else{noms++; artistNominations.appendChild(div);}
+
+        document.getElementById("wCount").innerText=`Wins: ${wins}`;
+        document.getElementById("nCount").innerText=`Nominations: ${noms}`;
       });
     });
   });
