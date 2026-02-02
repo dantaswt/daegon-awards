@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Daegon Awards</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+:root {
+  --gold: #c9a44c;
+  --black: #000;
+  --gray: #666;
+  --bg: #fff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: var(--bg);
+  color: var(--black);
+}
+
+header {
+  padding: 40px 20px;
+  text-align: center;
+  border-bottom: 3px solid var(--gold);
+}
+
+header h1 {
+  margin: 0;
+  font-family: "Times New Roman", serif;
+  letter-spacing: 6px;
+  font-size: 42px;
+}
+
+nav {
+  margin-top: 10px;
+}
+
+nav a {
+  margin: 0 10px;
+  text-decoration: none;
+  color: var(--black);
+  font-weight: bold;
+}
+
+.container {
+  max-width: 1200px;
+  margin: auto;
+  padding: 50px 20px;
+}
+
+.hidden {
+  display: none;
+}
+
+/* HOME */
+.editions {
+  display: flex;
+  gap: 30px;
+  margin-top: 40px;
+}
+
+.edition-card {
+  flex: 1;
+  padding: 50px;
+  text-align: center;
+  border: 2px solid var(--black);
+  cursor: pointer;
+  transition: 0.3s;
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.edition-card:hover {
+  background: var(--gold);
+  color: white;
+}
+
+/* CATEGORIES */
+.category {
+  margin-bottom: 50px;
+}
+
+.category h2 {
+  border-bottom: 2px solid var(--gold);
+  padding-bottom: 10px;
+  font-family: "Times New Roman", serif;
+}
+
+.nominee {
+  padding: 12px;
+  margin: 8px 0;
+  border-left: 4px solid transparent;
+}
+
+.nominee a {
+  text-decoration: none;
+  color: var(--black);
+}
+
+.winner {
+  background: #f7f3e8;
+  border-left: 4px solid var(--gold);
+  font-weight: bold;
+}
+
+/* ARTIST */
+.artist-profile {
+  display: flex;
+  gap: 30px;
+  align-items: center;
+  margin-bottom: 40px;
+}
+
+.artist-profile img {
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--gold);
+}
+
+.artist-profile h2 {
+  margin: 0;
+  font-family: "Times New Roman", serif;
+}
+
+footer {
+  text-align: center;
+  padding: 30px;
+  border-top: 1px solid #ddd;
+  color: var(--gray);
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>DAEGON AWARDS</h1>
+  <nav>
+    <a href="#" onclick="showHome()">Home</a>
+  </nav>
+</header>
+
+<!-- HOME -->
+<section id="home" class="container">
+  <h2>Recent Editions</h2>
+  <div class="editions">
+    <div class="edition-card" onclick="openEdition(2017)">2017</div>
+    <div class="edition-card" onclick="openEdition(2018)">2018</div>
+  </div>
+</section>
+
+<!-- EDITION -->
+<section id="edition" class="container hidden">
+  <h2 id="editionTitle"></h2>
+  <div id="categories"></div>
+</section>
+
+<!-- ARTIST -->
+<section id="artist" class="container hidden">
+  <div id="artistProfile"></div>
+  <h3>Awards History</h3>
+  <div id="artistAwards"></div>
+</section>
+
+<footer>
+  © Daegon Awards
+</footer>
+
+<script>
+const editions = {
+  2017: { sheetId: "1DNb6uYi6K231-fhrSt3XPlaag8eG9ZFVHhvSXyjWCuk", gid: "0" },
+  2018: { sheetId: "1DNb6uYi6K231-fhrSt3XPlaag8eG9ZFVHhvSXyjWCuk", gid: "912023648" }
+};
+
+function showHome() {
+  hideAll();
+  document.getElementById("home").classList.remove("hidden");
+}
+
+function hideAll() {
+  document.querySelectorAll("section").forEach(s => s.classList.add("hidden"));
+}
+
+function fetchSheet(sheetId, gid) {
+  const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&gid=${gid}`;
+  return fetch(url)
+    .then(res => res.text())
+    .then(text => JSON.parse(text.substring(47).slice(0, -2)));
+}
+
+/* EDITION */
+function openEdition(year) {
+  hideAll();
+  document.getElementById("edition").classList.remove("hidden");
+  document.getElementById("editionTitle").innerText = `Daegon Awards ${year}`;
+  document.getElementById("categories").innerHTML = "";
+
+  fetchSheet(editions[year].sheetId, editions[year].gid).then(data => {
+    const categories = {};
+
+    data.table.rows.forEach(r => {
+      const category = r.c[0]?.v;
+      const item = r.c[1]?.v || r.c[2]?.v;
+      const artist = r.c[2]?.v;
+      const status = r.c[3]?.v;
+
+      if (!categories[category]) categories[category] = [];
+      categories[category].push({ item, artist, status });
+    });
+
+    for (const c in categories) {
+      const div = document.createElement("div");
+      div.className = "category";
+      div.innerHTML = `<h2>${c}</h2>`;
+
+      categories[c].forEach(n => {
+        const row = document.createElement("div");
+        row.className = "nominee" + (n.status === "Winner" ? " winner" : "");
+        row.innerHTML = `
+          <a href="#" onclick="openArtist('${encodeURIComponent(n.artist)}')">
+            ${n.item} — ${n.artist}
+          </a>`;
+        div.appendChild(row);
+      });
+
+      document.getElementById("categories").appendChild(div);
+    }
+  });
+}
+
+/* ARTIST */
+function openArtist(nameEncoded) {
+  const name = decodeURIComponent(nameEncoded);
+  hideAll();
+  document.getElementById("artist").classList.remove("hidden");
+  document.getElementById("artistProfile").innerHTML = "";
+  document.getElementById("artistAwards").innerHTML = "";
+
+  fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(name)}`)
+    .then(r => r.json())
+    .then(d => {
+      document.getElementById("artistProfile").innerHTML = `
+        <div class="artist-profile">
+          <img src="${d.thumbnail?.source || ''}">
+          <div>
+            <h2>${name}</h2>
+            <p>${d.extract || "Artist profile."}</p>
+          </div>
+        </div>`;
+    });
+
+  Object.keys(editions).forEach(year => {
+    fetchSheet(editions[year].sheetId, editions[year].gid).then(data => {
+      data.table.rows.forEach(r => {
+        if (r.c[2]?.v === name) {
+          const div = document.createElement("div");
+          div.className = "nominee" + (r.c[3]?.v === "Winner" ? " winner" : "");
+          div.innerHTML = `<strong>${year}</strong> — ${r.c[0]?.v}<br>${r.c[1]?.v || name}`;
+          document.getElementById("artistAwards").appendChild(div);
+        }
+      });
+    });
+  });
+}
+</script>
+
+</body>
+</html>
