@@ -15,11 +15,9 @@
 }
 
 *{box-sizing:border-box}
-html{scroll-behavior:smooth}
-
 body{
   margin:0;
-  font-family:"Helvetica Neue",Arial,sans-serif;
+  font-family:Arial,Helvetica,sans-serif;
   background:var(--bg);
   color:var(--black);
 }
@@ -29,7 +27,7 @@ header{
   top:0;
   z-index:10;
   background:#fff;
-  padding:28px 20px 22px;
+  padding:30px 20px;
   text-align:center;
   border-bottom:3px solid var(--gold);
 }
@@ -41,18 +39,16 @@ header h1{
   font-size:40px;
 }
 
-nav{margin-top:12px}
 nav a{
-  margin:0 12px;
   text-decoration:none;
-  color:var(--black);
   font-weight:bold;
+  color:#000;
 }
 
 .container{
   max-width:1200px;
   margin:auto;
-  padding:45px 18px;
+  padding:40px 20px;
 }
 
 .hidden{display:none}
@@ -62,94 +58,55 @@ nav a{
   display:grid;
   grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
   gap:30px;
-  margin-top:45px;
 }
 
 .edition-card{
   padding:60px;
   text-align:center;
-  border:2px solid var(--black);
-  cursor:pointer;
+  border:2px solid #000;
   font-size:28px;
   font-weight:bold;
-  transition:.35s;
+  cursor:pointer;
+  transition:.3s;
 }
+
 .edition-card:hover{
   background:var(--gold);
   color:#fff;
   transform:translateY(-6px);
 }
 
-/* CONTROLS */
-.controls{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  margin:20px 0 35px;
-  gap:15px;
-  flex-wrap:wrap;
-}
-
-.toggle{
-  cursor:pointer;
-  font-size:14px;
-  border:1px solid #ddd;
-  padding:8px 14px;
-}
-
 /* CATEGORY */
 .category{
-  margin-bottom:65px;
+  margin-bottom:60px;
 }
 
 .category h2{
-  font-family:"Times New Roman",serif;
   border-bottom:2px solid var(--gold);
-  padding-bottom:8px;
+  padding-bottom:10px;
+  font-family:"Times New Roman",serif;
 }
 
-.category small{
-  color:var(--gray);
-}
-
-/* NOMINEE */
 .nominee{
   display:flex;
+  gap:15px;
   align-items:center;
-  gap:14px;
   padding:12px;
   margin:10px 0;
   border-left:4px solid transparent;
-  background:#fff;
-  opacity:0;
-  transform:translateY(20px);
-  transition:.4s;
 }
-
-.nominee.visible{
-  opacity:1;
-  transform:none;
-}
-
-.nominee:hover{background:var(--soft)}
 
 .nominee img{
   width:48px;
   height:48px;
   border-radius:50%;
-  object-fit:cover;
   border:2px solid var(--gold);
+  object-fit:cover;
 }
 
 .nominee a{
   text-decoration:none;
-  color:var(--black);
-  font-weight:500;
-}
-
-.feature{
-  font-size:13px;
-  color:var(--gray);
+  color:#000;
 }
 
 .winner{
@@ -164,6 +121,7 @@ nav a{
   padding:4px 10px;
   border-radius:20px;
 }
+
 .badge.winner{background:var(--gold);color:#fff}
 .badge.nominated{background:#ddd}
 
@@ -172,32 +130,20 @@ nav a{
   display:flex;
   gap:30px;
   align-items:center;
-  margin-bottom:40px;
   flex-wrap:wrap;
 }
 
 .artist-profile img{
-  width:190px;
-  height:190px;
+  width:180px;
+  height:180px;
   border-radius:50%;
   border:4px solid var(--gold);
   object-fit:cover;
 }
 
-.stats{
-  display:flex;
-  gap:18px;
-  margin-top:15px;
-}
-
-.stat{
-  padding:10px 18px;
-  border:1px solid #ddd;
-}
-
 footer{
   text-align:center;
-  padding:35px;
+  padding:30px;
   border-top:1px solid #ddd;
   color:var(--gray);
 }
@@ -209,35 +155,27 @@ footer{
 <header>
   <h1>DAEGON AWARDS</h1>
   <nav>
-    <a href="#" onclick="showHome()">Home</a>
+    <a href="#" id="homeLink">Home</a>
   </nav>
 </header>
 
 <section id="home" class="container">
   <h2>Recent Editions</h2>
   <div class="editions">
-    <div class="edition-card" onclick="openEdition(2017)">2017</div>
-    <div class="edition-card" onclick="openEdition(2018)">2018</div>
+    <div class="edition-card" data-year="2017">2017</div>
+    <div class="edition-card" data-year="2018">2018</div>
   </div>
 </section>
 
 <section id="edition" class="container hidden">
   <h2 id="editionTitle"></h2>
-
-  <div class="controls">
-    <div id="editionStats"></div>
-    <div class="toggle" onclick="toggleWinners()">Show winners only</div>
-  </div>
-
   <div id="categories"></div>
 </section>
 
 <section id="artist" class="container hidden">
   <div id="artistProfile"></div>
-
   <h3>🏆 Wins</h3>
   <div id="artistWins"></div>
-
   <h3>🎖️ Nominations</h3>
   <div id="artistNominations"></div>
 </section>
@@ -245,118 +183,80 @@ footer{
 <footer>© Daegon Awards</footer>
 
 <script>
-/* ================= CONFIG ================= */
-const editions={
+/* ================= ELEMENTS ================= */
+const homeEl = document.getElementById("home");
+const editionEl = document.getElementById("edition");
+const artistEl = document.getElementById("artist");
+const categoriesEl = document.getElementById("categories");
+const editionTitleEl = document.getElementById("editionTitle");
+const artistProfileEl = document.getElementById("artistProfile");
+const artistWinsEl = document.getElementById("artistWins");
+const artistNominationsEl = document.getElementById("artistNominations");
+
+/* ================= DATA ================= */
+const editions = {
   2017:{sheetId:"1DNb6uYi6K231-fhrSt3XPlaag8eG9ZFVHhvSXyjWCuk",gid:"0"},
   2018:{sheetId:"1DNb6uYi6K231-fhrSt3XPlaag8eG9ZFVHhvSXyjWCuk",gid:"912023648"}
 };
 
-const NO_FEAT=["Artist of the Year","Best New Artist"];
-
-/* ================= STATE ================= */
-const sheetCache={};
-const imageCache={};
-let winnersOnly=false;
+const NO_FEAT = ["Artist of the Year","Best New Artist"];
 
 /* ================= HELPERS ================= */
 function hideAll(){
-  document.querySelectorAll("section").forEach(s=>s.classList.add("hidden"));
+  homeEl.classList.add("hidden");
+  editionEl.classList.add("hidden");
+  artistEl.classList.add("hidden");
 }
+
 function showHome(){
   hideAll();
-  home.classList.remove("hidden");
-  window.scrollTo(0,0);
+  homeEl.classList.remove("hidden");
 }
+
+document.getElementById("homeLink").onclick = showHome;
 
 function fetchSheet(id,gid){
-  const key=id+gid;
-  if(sheetCache[key]) return Promise.resolve(sheetCache[key]);
-
   return fetch(`https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:json&gid=${gid}`)
     .then(r=>r.text())
-    .then(t=>{
-      const json=JSON.parse(t.substring(47).slice(0,-2));
-      sheetCache[key]=json;
-      return json;
-    });
-}
-
-function parseArtists(main,feature){
-  let list=[main];
-  if(feature) feature.split(",").forEach(a=>list.push(a.trim()));
-  return list.filter(Boolean);
+    .then(t=>JSON.parse(t.substring(47).slice(0,-2)));
 }
 
 function artistImage(name){
-  if(imageCache[name]) return Promise.resolve(imageCache[name]);
   return fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(name)}`)
     .then(r=>r.json())
-    .then(d=>{
-      const img=d.thumbnail?.source||"https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png";
-      imageCache[name]=img;
-      return img;
-    })
-    .catch(()=>{
-      const fallback="https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png";
-      imageCache[name]=fallback;
-      return fallback;
-    });
+    .then(d=>d.thumbnail?.source || "https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png");
 }
-
-/* ================= ANIMATION OBSERVER ================= */
-const observer=new IntersectionObserver(entries=>{
-  entries.forEach(e=>{
-    if(e.isIntersecting) e.target.classList.add("visible");
-  });
-},{threshold:.15});
 
 /* ================= EDITION ================= */
-function toggleWinners(){
-  winnersOnly=!winnersOnly;
-  document.querySelectorAll(".nominee").forEach(n=>{
-    if(!n.classList.contains("winner"))
-      n.style.display=winnersOnly?"none":"flex";
-  });
-}
+document.querySelectorAll(".edition-card").forEach(card=>{
+  card.onclick = ()=> openEdition(card.dataset.year);
+});
 
 function openEdition(year){
   hideAll();
-  edition.classList.remove("hidden");
-  editionTitle.innerText=`Daegon Awards ${year}`;
-  categories.innerHTML="";
-  editionStats.innerHTML="";
-  winnersOnly=false;
-  window.scrollTo(0,0);
+  editionEl.classList.remove("hidden");
+  editionTitleEl.innerText = `Daegon Awards ${year}`;
+  categoriesEl.innerHTML = "";
 
   fetchSheet(editions[year].sheetId,editions[year].gid).then(data=>{
-    const rows=data.table.rows.slice(1);
-    const cats={};
-    let totalWins=0,totalNoms=0;
+    const rows = data.table.rows.slice(1);
+    const cats = {};
 
     rows.forEach(r=>{
       const c=r.c[0]?.v;
       if(!c) return;
-      const obj={
-        item:r.c[1]?.v,
-        artist:r.c[2]?.v,
-        feature:r.c[3]?.v,
-        status:r.c[4]?.v
-      };
+      const item=r.c[1]?.v;
+      const artist=r.c[2]?.v;
+      const feature=r.c[3]?.v;
+      const status=r.c[4]?.v;
       if(!cats[c]) cats[c]=[];
-      cats[c].push(obj);
-      obj.status==="Winner"?totalWins++:totalNoms++;
+      cats[c].push({item,artist,feature,status});
     });
-
-    editionStats.innerText=`${totalWins} Winners • ${totalNoms} Nominations`;
 
     for(const c in cats){
       const block=document.createElement("div");
       block.className="category";
-
-      const wins=cats[c].filter(n=>n.status==="Winner").length;
-      const noms=cats[c].length-wins;
-
-      block.innerHTML=`<h2>${c}</h2><small>${wins} Winner • ${noms} Nominations</small>`;
+      block.innerHTML=`<h2>${c}</h2>`;
 
       cats[c]
         .sort((a,b)=>(b.status==="Winner")-(a.status==="Winner"))
@@ -368,19 +268,16 @@ function openEdition(year){
           const row=document.createElement("div");
           row.className="nominee"+(n.status==="Winner"?" winner":"");
           row.innerHTML=`
-            <img loading="lazy" src="${img}">
-            <div>
-              <a href="#" onclick="openArtist('${encodeURIComponent(n.artist)}')">${text}</a>
-              ${showFeat?`<div class="feature">feat. ${n.feature}</div>`:""}
-            </div>
+            <img src="${img}">
+            <a href="#" onclick="openArtist('${encodeURIComponent(n.artist)}')">${text}</a>
+            ${showFeat?`<span style="color:#666"> feat. ${n.feature}</span>`:""}
             <span class="badge ${n.status==="Winner"?"winner":"nominated"}">
               ${n.status==="Winner"?"Winner":"Nominated"}
             </span>`;
           block.appendChild(row);
-          observer.observe(row);
         });
 
-      categories.appendChild(block);
+      categoriesEl.appendChild(block);
     }
   });
 }
@@ -389,51 +286,32 @@ function openEdition(year){
 function openArtist(enc){
   const name=decodeURIComponent(enc);
   hideAll();
-  artist.classList.remove("hidden");
-  artistProfile.innerHTML="";
-  artistWins.innerHTML="";
-  artistNominations.innerHTML="";
-  window.scrollTo(0,0);
-
-  let wins=0,noms=0;
+  artistEl.classList.remove("hidden");
+  artistProfileEl.innerHTML="";
+  artistWinsEl.innerHTML="";
+  artistNominationsEl.innerHTML="";
 
   artistImage(name).then(img=>{
-    fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(name)}`)
-      .then(r=>r.json())
-      .then(d=>{
-        artistProfile.innerHTML=`
-          <div class="artist-profile">
-            <img src="${img}">
-            <div>
-              <h2>${name}</h2>
-              <p>${d.extract||"Artist profile."}</p>
-              <div class="stats">
-                <div class="stat" id="wCount">Wins: 0</div>
-                <div class="stat" id="nCount">Nominations: 0</div>
-              </div>
-            </div>
-          </div>`;
-      });
+    artistProfileEl.innerHTML=`
+      <div class="artist-profile">
+        <img src="${img}">
+        <div>
+          <h2>${name}</h2>
+        </div>
+      </div>`;
   });
 
   Object.keys(editions).forEach(y=>{
     fetchSheet(editions[y].sheetId,editions[y].gid).then(data=>{
       data.table.rows.slice(1).forEach(r=>{
-        const artists=parseArtists(r.c[2]?.v,r.c[3]?.v);
+        const artists=[r.c[2]?.v, ...(r.c[3]?.v||"").split(",").map(a=>a.trim())].filter(Boolean);
         if(!artists.includes(name)) return;
 
         const div=document.createElement("div");
         div.className="nominee"+(r.c[4]?.v==="Winner"?" winner":"");
         div.innerHTML=`<strong>${y}</strong> — ${r.c[0]?.v}<br>${r.c[1]?.v||name}`;
-        observer.observe(div);
 
-        if(r.c[4]?.v==="Winner"){
-          wins++; artistWins.appendChild(div);
-        }else{
-          noms++; artistNominations.appendChild(div);
-        }
-        document.getElementById("wCount").innerText=`Wins: ${wins}`;
-        document.getElementById("nCount").innerText=`Nominations: ${noms}`;
+        (r.c[4]?.v==="Winner"?artistWinsEl:artistNominationsEl).appendChild(div);
       });
     });
   });
