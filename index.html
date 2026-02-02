@@ -11,11 +11,10 @@
   --black:#000;
   --gray:#666;
   --bg:#fff;
-  --soft:#f8f8f8;
+  --soft:#f6f6f6;
 }
 
 *{box-sizing:border-box}
-
 html{scroll-behavior:smooth}
 
 body{
@@ -23,13 +22,14 @@ body{
   font-family:"Helvetica Neue",Arial,sans-serif;
   background:var(--bg);
   color:var(--black);
-  animation:fadeIn 1s ease;
 }
 
-@keyframes fadeIn{from{opacity:0}to{opacity:1}}
-
 header{
-  padding:40px 20px 30px;
+  position:sticky;
+  top:0;
+  z-index:10;
+  background:#fff;
+  padding:28px 20px 22px;
   text-align:center;
   border-bottom:3px solid var(--gold);
 }
@@ -38,131 +38,104 @@ header h1{
   margin:0;
   font-family:"Times New Roman",serif;
   letter-spacing:6px;
-  font-size:44px;
+  font-size:40px;
 }
 
-nav{
-  margin-top:15px;
-}
-
+nav{margin-top:12px}
 nav a{
   margin:0 12px;
   text-decoration:none;
   color:var(--black);
   font-weight:bold;
-  position:relative;
 }
-
-nav a::after{
-  content:"";
-  position:absolute;
-  bottom:-4px;
-  left:0;
-  width:0;
-  height:2px;
-  background:var(--gold);
-  transition:.3s;
-}
-
-nav a:hover::after{width:100%}
 
 .container{
-  max-width:1250px;
+  max-width:1200px;
   margin:auto;
-  padding:50px 20px;
+  padding:45px 18px;
 }
 
 .hidden{display:none}
 
-/* SEARCH */
-.search-box{
-  max-width:500px;
-  margin:30px auto 0;
-}
-
-.search-box input{
-  width:100%;
-  padding:14px;
-  font-size:16px;
-  border:2px solid #ddd;
-}
-
-.search-results{
-  background:#fff;
-  border:1px solid #ddd;
-  max-height:300px;
-  overflow:auto;
-}
-
-.search-results div{
-  padding:10px;
-  cursor:pointer;
-}
-
-.search-results div:hover{
-  background:var(--soft);
-}
-
 /* HOME */
 .editions{
-  display:flex;
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
   gap:30px;
-  margin-top:50px;
+  margin-top:45px;
 }
 
 .edition-card{
-  flex:1;
-  padding:70px;
+  padding:60px;
   text-align:center;
   border:2px solid var(--black);
   cursor:pointer;
-  font-size:30px;
+  font-size:28px;
   font-weight:bold;
-  transition:.4s;
+  transition:.35s;
 }
-
 .edition-card:hover{
   background:var(--gold);
   color:#fff;
-  transform:translateY(-10px);
-  box-shadow:0 10px 25px rgba(0,0,0,.15);
+  transform:translateY(-6px);
+}
+
+/* CONTROLS */
+.controls{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin:20px 0 35px;
+  gap:15px;
+  flex-wrap:wrap;
+}
+
+.toggle{
+  cursor:pointer;
+  font-size:14px;
+  border:1px solid #ddd;
+  padding:8px 14px;
 }
 
 /* CATEGORY */
 .category{
-  margin-bottom:70px;
+  margin-bottom:65px;
 }
 
 .category h2{
   font-family:"Times New Roman",serif;
   border-bottom:2px solid var(--gold);
-  padding-bottom:10px;
+  padding-bottom:8px;
+}
+
+.category small{
+  color:var(--gray);
 }
 
 /* NOMINEE */
 .nominee{
   display:flex;
   align-items:center;
-  gap:16px;
-  padding:14px;
-  margin:12px 0;
+  gap:14px;
+  padding:12px;
+  margin:10px 0;
   border-left:4px solid transparent;
   background:#fff;
-  animation:stagger .5s ease both;
+  opacity:0;
+  transform:translateY(20px);
+  transition:.4s;
 }
 
-@keyframes stagger{
-  from{opacity:0;transform:translateY(20px)}
-  to{opacity:1}
+.nominee.visible{
+  opacity:1;
+  transform:none;
 }
 
-.nominee:hover{
-  background:var(--soft);
-}
+.nominee:hover{background:var(--soft)}
 
 .nominee img{
-  width:52px;
-  height:52px;
+  width:48px;
+  height:48px;
   border-radius:50%;
   object-fit:cover;
   border:2px solid var(--gold);
@@ -175,8 +148,8 @@ nav a:hover::after{width:100%}
 }
 
 .feature{
+  font-size:13px;
   color:var(--gray);
-  font-size:14px;
 }
 
 .winner{
@@ -191,21 +164,21 @@ nav a:hover::after{width:100%}
   padding:4px 10px;
   border-radius:20px;
 }
-
 .badge.winner{background:var(--gold);color:#fff}
 .badge.nominated{background:#ddd}
 
 /* ARTIST */
 .artist-profile{
   display:flex;
-  gap:35px;
+  gap:30px;
   align-items:center;
   margin-bottom:40px;
+  flex-wrap:wrap;
 }
 
 .artist-profile img{
-  width:200px;
-  height:200px;
+  width:190px;
+  height:190px;
   border-radius:50%;
   border:4px solid var(--gold);
   object-fit:cover;
@@ -213,7 +186,7 @@ nav a:hover::after{width:100%}
 
 .stats{
   display:flex;
-  gap:20px;
+  gap:18px;
   margin-top:15px;
 }
 
@@ -238,11 +211,6 @@ footer{
   <nav>
     <a href="#" onclick="showHome()">Home</a>
   </nav>
-
-  <div class="search-box">
-    <input id="search" placeholder="Search artists or items..." oninput="searchAll(this.value)">
-    <div id="results" class="search-results hidden"></div>
-  </div>
 </header>
 
 <section id="home" class="container">
@@ -255,6 +223,12 @@ footer{
 
 <section id="edition" class="container hidden">
   <h2 id="editionTitle"></h2>
+
+  <div class="controls">
+    <div id="editionStats"></div>
+    <div class="toggle" onclick="toggleWinners()">Show winners only</div>
+  </div>
+
   <div id="categories"></div>
 </section>
 
@@ -271,24 +245,40 @@ footer{
 <footer>© Daegon Awards</footer>
 
 <script>
+/* ================= CONFIG ================= */
 const editions={
   2017:{sheetId:"1DNb6uYi6K231-fhrSt3XPlaag8eG9ZFVHhvSXyjWCuk",gid:"0"},
   2018:{sheetId:"1DNb6uYi6K231-fhrSt3XPlaag8eG9ZFVHhvSXyjWCuk",gid:"912023648"}
 };
 
-let globalIndex=[];
+const NO_FEAT=["Artist of the Year","Best New Artist"];
 
+/* ================= STATE ================= */
+const sheetCache={};
+const imageCache={};
+let winnersOnly=false;
+
+/* ================= HELPERS ================= */
 function hideAll(){
   document.querySelectorAll("section").forEach(s=>s.classList.add("hidden"));
 }
 function showHome(){
-  hideAll(); home.classList.remove("hidden");
+  hideAll();
+  home.classList.remove("hidden");
+  window.scrollTo(0,0);
 }
 
 function fetchSheet(id,gid){
+  const key=id+gid;
+  if(sheetCache[key]) return Promise.resolve(sheetCache[key]);
+
   return fetch(`https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:json&gid=${gid}`)
     .then(r=>r.text())
-    .then(t=>JSON.parse(t.substring(47).slice(0,-2)));
+    .then(t=>{
+      const json=JSON.parse(t.substring(47).slice(0,-2));
+      sheetCache[key]=json;
+      return json;
+    });
 }
 
 function parseArtists(main,feature){
@@ -298,82 +288,96 @@ function parseArtists(main,feature){
 }
 
 function artistImage(name){
+  if(imageCache[name]) return Promise.resolve(imageCache[name]);
   return fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(name)}`)
     .then(r=>r.json())
-    .then(d=>d.thumbnail?.source||"");
-}
-
-/* SEARCH */
-function searchAll(q){
-  const res=document.getElementById("results");
-  res.innerHTML="";
-  if(!q){res.classList.add("hidden");return}
-  res.classList.remove("hidden");
-
-  globalIndex.filter(i=>i.text.toLowerCase().includes(q.toLowerCase()))
-    .slice(0,15)
-    .forEach(i=>{
-      const d=document.createElement("div");
-      d.innerText=i.text;
-      d.onclick=()=>openArtist(encodeURIComponent(i.artist));
-      res.appendChild(d);
+    .then(d=>{
+      const img=d.thumbnail?.source||"https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png";
+      imageCache[name]=img;
+      return img;
+    })
+    .catch(()=>{
+      const fallback="https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png";
+      imageCache[name]=fallback;
+      return fallback;
     });
 }
 
-/* LOAD INDEX */
-Object.keys(editions).forEach(y=>{
-  fetchSheet(editions[y].sheetId,editions[y].gid).then(data=>{
-    data.table.rows.forEach(r=>{
-      const item=r.c[1]?.v||"";
-      const artist=r.c[2]?.v;
-      parseArtists(artist,r.c[3]?.v).forEach(a=>{
-        globalIndex.push({artist:a,text:`${a} ${item}`});
-      });
-    });
+/* ================= ANIMATION OBSERVER ================= */
+const observer=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting) e.target.classList.add("visible");
   });
-});
+},{threshold:.15});
 
-/* EDITION */
+/* ================= EDITION ================= */
+function toggleWinners(){
+  winnersOnly=!winnersOnly;
+  document.querySelectorAll(".nominee").forEach(n=>{
+    if(!n.classList.contains("winner"))
+      n.style.display=winnersOnly?"none":"flex";
+  });
+}
+
 function openEdition(year){
   hideAll();
   edition.classList.remove("hidden");
   editionTitle.innerText=`Daegon Awards ${year}`;
   categories.innerHTML="";
+  editionStats.innerHTML="";
+  winnersOnly=false;
+  window.scrollTo(0,0);
 
   fetchSheet(editions[year].sheetId,editions[year].gid).then(data=>{
+    const rows=data.table.rows.slice(1);
     const cats={};
+    let totalWins=0,totalNoms=0;
 
-    data.table.rows.forEach(r=>{
+    rows.forEach(r=>{
       const c=r.c[0]?.v;
-      const item=r.c[1]?.v;
-      const artist=r.c[2]?.v;
-      const feature=r.c[3]?.v;
-      const status=r.c[4]?.v;
+      if(!c) return;
+      const obj={
+        item:r.c[1]?.v,
+        artist:r.c[2]?.v,
+        feature:r.c[3]?.v,
+        status:r.c[4]?.v
+      };
       if(!cats[c]) cats[c]=[];
-      cats[c].push({item,artist,feature,status});
+      cats[c].push(obj);
+      obj.status==="Winner"?totalWins++:totalNoms++;
     });
+
+    editionStats.innerText=`${totalWins} Winners • ${totalNoms} Nominations`;
 
     for(const c in cats){
       const block=document.createElement("div");
       block.className="category";
-      block.innerHTML=`<h2>${c}</h2>`;
 
-      cats[c].sort((a,b)=>(b.status==="Winner")-(a.status==="Winner"))
+      const wins=cats[c].filter(n=>n.status==="Winner").length;
+      const noms=cats[c].length-wins;
+
+      block.innerHTML=`<h2>${c}</h2><small>${wins} Winner • ${noms} Nominations</small>`;
+
+      cats[c]
+        .sort((a,b)=>(b.status==="Winner")-(a.status==="Winner"))
         .forEach(async n=>{
           const img=await artistImage(n.artist);
           const text=(!n.item||n.item==="-"?n.artist:`${n.item} — ${n.artist}`);
+          const showFeat=n.feature && !NO_FEAT.includes(c);
+
           const row=document.createElement("div");
           row.className="nominee"+(n.status==="Winner"?" winner":"");
           row.innerHTML=`
             <img loading="lazy" src="${img}">
             <div>
               <a href="#" onclick="openArtist('${encodeURIComponent(n.artist)}')">${text}</a>
-              ${n.feature?`<div class="feature">feat. ${n.feature}</div>`:""}
+              ${showFeat?`<div class="feature">feat. ${n.feature}</div>`:""}
             </div>
             <span class="badge ${n.status==="Winner"?"winner":"nominated"}">
               ${n.status==="Winner"?"Winner":"Nominated"}
             </span>`;
           block.appendChild(row);
+          observer.observe(row);
         });
 
       categories.appendChild(block);
@@ -381,13 +385,17 @@ function openEdition(year){
   });
 }
 
-/* ARTIST */
+/* ================= ARTIST ================= */
 function openArtist(enc){
   const name=decodeURIComponent(enc);
-  hideAll(); artist.classList.remove("hidden");
-  artistProfile.innerHTML=""; artistWins.innerHTML=""; artistNominations.innerHTML="";
+  hideAll();
+  artist.classList.remove("hidden");
+  artistProfile.innerHTML="";
+  artistWins.innerHTML="";
+  artistNominations.innerHTML="";
+  window.scrollTo(0,0);
 
-  let wins=0, noms=0;
+  let wins=0,noms=0;
 
   artistImage(name).then(img=>{
     fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(name)}`)
@@ -410,17 +418,20 @@ function openArtist(enc){
 
   Object.keys(editions).forEach(y=>{
     fetchSheet(editions[y].sheetId,editions[y].gid).then(data=>{
-      data.table.rows.forEach(r=>{
+      data.table.rows.slice(1).forEach(r=>{
         const artists=parseArtists(r.c[2]?.v,r.c[3]?.v);
         if(!artists.includes(name)) return;
 
         const div=document.createElement("div");
         div.className="nominee"+(r.c[4]?.v==="Winner"?" winner":"");
         div.innerHTML=`<strong>${y}</strong> — ${r.c[0]?.v}<br>${r.c[1]?.v||name}`;
+        observer.observe(div);
 
-        if(r.c[4]?.v==="Winner"){wins++; artistWins.appendChild(div);}
-        else{noms++; artistNominations.appendChild(div);}
-
+        if(r.c[4]?.v==="Winner"){
+          wins++; artistWins.appendChild(div);
+        }else{
+          noms++; artistNominations.appendChild(div);
+        }
         document.getElementById("wCount").innerText=`Wins: ${wins}`;
         document.getElementById("nCount").innerText=`Nominations: ${noms}`;
       });
