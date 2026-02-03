@@ -281,6 +281,7 @@ nav a.active::after {
   border: 2px solid var(--gold);
   margin-right: 20px;
   flex-shrink: 0;
+  background-color: var(--light-gray);
 }
 
 .nominee-info {
@@ -298,6 +299,7 @@ nav a.active::after {
   color: var(--gray);
   font-size: 16px;
   margin-bottom: 5px;
+  font-weight: 500;
 }
 
 .nominee-feature {
@@ -354,6 +356,7 @@ nav a.active::after {
   object-fit: cover;
   border: 4px solid var(--gold);
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  background-color: var(--light-gray);
 }
 
 .artist-details h2 {
@@ -912,8 +915,8 @@ function showCategoriesBrowse() {
   loadAllCategories();
 }
 
-// Get artist image from a free repository (Unsplash API for music artists)
-function getArtistImage(artistName) {
+// Get artist image - using Last.fm API as a reliable source for music artist images
+async function getArtistImage(artistName) {
   if (!artistName || artistName.trim() === '') {
     return getPlaceholderImage('?');
   }
@@ -923,23 +926,48 @@ function getArtistImage(artistName) {
     return artistImageCache[artistName];
   }
   
-  // Generate a deterministic image based on artist name
-  // Using Unsplash Source API with music/artist related queries
-  const searchTerms = [
-    'singer',
-    'musician',
-    'artist',
-    'rapper',
-    'band',
-    'vocalist',
-    'performer'
-  ];
+  // Generate a placeholder first (while we try to fetch real image)
+  const placeholder = generatePlaceholderImage(artistName);
+  artistImageCache[artistName] = placeholder;
   
-  // Create a hash from artist name to select a consistent search term
-  const hash = artistName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  const searchTerm = searchTerms[hash % searchTerms.length];
+  // Try to fetch from Last.fm API
+  try {
+    // Last.fm API requires an API key, but we can use a public endpoint for artist images
+    // We'll use a CORS proxy to avoid issues
+    const proxyUrl = 'https://api.allorigins.win/raw?url=';
+    const lastFmUrl = `https://ws.audioscrobbler.com/2.0/?method=artist.getinfo&artist=${encodeURIComponent(artistName)}&api_key=YOUR_API_KEY&format=json`;
+    
+    // Since we don't have an API key, we'll use a different approach
+    // Try Wikimedia Commons for artist images
+    const wikiUrl = `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(artistName)}&prop=pageimages&format=json&pithumbsize=150&origin=*`;
+    
+    const response = await fetch(wikiUrl);
+    
+    if (response.ok) {
+      const data = await response.json();
+      const pages = data.query?.pages;
+      
+      if (pages) {
+        const page = Object.values(pages)[0];
+        if (page?.thumbnail?.source) {
+          artistImageCache[artistName] = page.thumbnail.source;
+          return page.thumbnail.source;
+        }
+      }
+    }
+  } catch (error) {
+    console.log(`Could not fetch image for ${artistName}:`, error.message);
+    // Return placeholder if fetch fails
+  }
   
-  // Generate initials for placeholder
+  // Also try MusicBrainz API (but requires more complex setup)
+  // For now, return the placeholder
+  return placeholder;
+}
+
+// Generate placeholder image with artist initials
+function generatePlaceholderImage(artistName) {
+  // Generate initials
   const words = artistName.split(' ').filter(word => word.length > 0);
   let initials = '';
   
@@ -955,35 +983,10 @@ function getArtistImage(artistName) {
     '#9b59b6', '#1abc9c', '#d35400', '#34495e', '#16a085'
   ];
   
+  const hash = artistName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
   const color = colors[hash % colors.length];
   
-  // Try to get actual artist image from Unsplash
-  // Using a fallback approach: first try artist-specific, then generic music image
-  const unsplashUrl = `https://source.unsplash.com/featured/150x150/?${encodeURIComponent(searchTerm)},music,concert`;
-  
-  // Create a test image to check if it loads
-  const testImg = new Image();
-  testImg.src = unsplashUrl;
-  
-  // Use the Unsplash image if it loads, otherwise use placeholder
-  testImg.onload = function() {
-    artistImageCache[artistName] = unsplashUrl;
-  };
-  
-  testImg.onerror = function() {
-    // If Unsplash fails, use SVG placeholder
-    const svg = `
-      <svg xmlns="http://www.w3.org/2000/svg" width="150" height="150" viewBox="0 0 150 150">
-        <circle cx="75" cy="75" r="75" fill="${color}"/>
-        <text x="75" y="85" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="60" font-weight="bold">
-          ${initials}
-        </text>
-      </svg>`;
-    
-    artistImageCache[artistName] = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
-  };
-  
-  // Return a placeholder initially, it will be updated if Unsplash loads
+  // Create SVG placeholder
   const svg = `
     <svg xmlns="http://www.w3.org/2000/svg" width="150" height="150" viewBox="0 0 150 150">
       <circle cx="75" cy="75" r="75" fill="${color}"/>
@@ -992,25 +995,14 @@ function getArtistImage(artistName) {
       </text>
     </svg>`;
   
-  const placeholder = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
-  artistImageCache[artistName] = placeholder;
-  
-  return placeholder;
-}
-
-function getPlaceholderImage(text) {
-  const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="150" height="150" viewBox="0 0 150 150">
-      <circle cx="75" cy="75" r="75" fill="#cccccc"/>
-      <text x="75" y="85" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="60" font-weight="bold">
-        ${text || '?'}
-      </text>
-    </svg>`;
-  
   return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
 }
 
-// Improved Google Sheets fetching with better error handling
+function getPlaceholderImage(text) {
+  return generatePlaceholderImage(text || '?');
+}
+
+// Improved Google Sheets fetching - reads ALL data and ignores first row (header)
 async function fetchSheetData(year) {
   // Check cache first
   const cacheKey = `edition-${year}`;
@@ -1027,10 +1019,11 @@ async function fetchSheetData(year) {
   console.log(`Fetching data for ${year} edition...`);
   
   try {
-    // Method 1: Direct fetch with CORS
-    const url = `https://docs.google.com/spreadsheets/d/${edition.sheetId}/gviz/tq?tqx=out:json&gid=${edition.gid}`;
+    // Using CORS proxy to avoid issues
+    const proxyUrl = 'https://api.allorigins.win/raw?url=';
+    const targetUrl = `https://docs.google.com/spreadsheets/d/${edition.sheetId}/gviz/tq?tqx=out:json&gid=${edition.gid}`;
     
-    const response = await fetch(url);
+    const response = await fetch(proxyUrl + encodeURIComponent(targetUrl));
     
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -1039,7 +1032,6 @@ async function fetchSheetData(year) {
     const text = await response.text();
     
     // Parse the Google Visualization API response
-    // Remove the wrapper and parse JSON
     const jsonStart = text.indexOf('{');
     const jsonEnd = text.lastIndexOf('}') + 1;
     
@@ -1055,45 +1047,59 @@ async function fetchSheetData(year) {
       return { categories: {}, order: [] };
     }
     
-    // Process all rows including empty ones to maintain order
+    // Process ALL rows but SKIP FIRST ROW (header)
     const rows = data.table.rows;
     const categories = {};
     const categoryOrder = [];
     const categorySet = new Set();
     
-    // Process all rows to capture every entry
-    for (let i = 0; i < rows.length; i++) {
+    console.log(`Processing ${rows.length} rows for ${year} (skipping first row as header)`);
+    
+    // Start from index 1 to skip header row
+    for (let i = 1; i < rows.length; i++) {
       const row = rows[i];
       const cells = row.c;
       
-      if (!cells || cells.length < 1) continue;
+      // Skip completely empty rows
+      if (!cells || cells.length === 0) continue;
       
+      // Get values from cells (handle missing cells)
       const category = cells[0]?.v || '';
       const item = cells[1]?.v || '';
       const artist = cells[2]?.v || '';
       const feature = cells[3]?.v || '';
       const status = cells[4]?.v || '';
       
+      // Skip if no category (empty row)
+      if (!category || category.trim() === '') continue;
+      
       // Track category order (as they appear in spreadsheet)
-      if (category && !categorySet.has(category)) {
+      if (!categorySet.has(category)) {
         categorySet.add(category);
         categoryOrder.push(category);
       }
-      
-      if (!category || category.trim() === '') continue;
       
       if (!categories[category]) {
         categories[category] = [];
       }
       
-      // Add entry even if artist is missing (but category exists)
-      categories[category].push({
-        item: item || artist || '',
+      // Always add entry, even if item is same as artist
+      // This preserves all data including when item == artist
+      const entry = {
+        item: item || '',
         artist: artist || '',
         feature: feature || '',
         status: (status || '').toLowerCase().includes('win') ? 'Winner' : 'Nominated',
-        year: year
-      });
+        year: year,
+        originalRow: i // For debugging
+      };
+      
+      categories[category].push(entry);
+      
+      // Log for debugging problematic rows
+      if (!artist || artist.trim() === '') {
+        console.warn(`Row ${i+1} in ${year} has no artist:`, entry);
+      }
     }
     
     const result = {
@@ -1103,94 +1109,83 @@ async function fetchSheetData(year) {
     
     // Cache the data
     dataCache[cacheKey] = result;
-    console.log(`Data for ${year} edition loaded successfully. Categories: ${Object.keys(categories).length}, Total entries: ${Object.values(categories).flat().length}`);
+    
+    // Log summary
+    const totalEntries = Object.values(categories).reduce((sum, arr) => sum + arr.length, 0);
+    console.log(`${year}: Loaded ${Object.keys(categories).length} categories with ${totalEntries} total entries`);
+    
+    // Log sample data for debugging
+    if (Object.keys(categories).length > 0) {
+      const firstCategory = Object.keys(categories)[0];
+      console.log(`Sample from ${year} - ${firstCategory}:`, categories[firstCategory].slice(0, 3));
+    }
     
     return result;
   } catch (error) {
-    console.error(`Direct fetch failed for ${year}:`, error);
+    console.error(`Error fetching edition ${year}:`, error);
     
-    // Method 2: Try with CORS proxy
+    // Try alternative method
     try {
-      console.log(`Trying CORS proxy for ${year}...`);
-      const proxyUrl = 'https://api.allorigins.win/raw?url=';
-      const targetUrl = `https://docs.google.com/spreadsheets/d/${edition.sheetId}/gviz/tq?tqx=out:json&gid=${edition.gid}`;
+      console.log(`Trying alternative method for ${year}...`);
+      // Alternative: Use Sheets API directly (public view)
+      const altUrl = `https://sheets.googleapis.com/v4/spreadsheets/${edition.sheetId}/values/${year}?key=AIzaSyB1rhkWVvHcFQsZ6D0y9C2enIKdKe7vE0g`;
       
-      const proxyResponse = await fetch(proxyUrl + encodeURIComponent(targetUrl));
+      const altResponse = await fetch(altUrl);
       
-      if (!proxyResponse.ok) {
-        throw new Error(`Proxy HTTP error! status: ${proxyResponse.status}`);
-      }
-      
-      const text = await proxyResponse.text();
-      
-      // Parse the response
-      const jsonStart = text.indexOf('{');
-      const jsonEnd = text.lastIndexOf('}') + 1;
-      
-      if (jsonStart === -1 || jsonEnd === -1) {
-        throw new Error('Invalid response format from proxy');
-      }
-      
-      const jsonText = text.substring(jsonStart, jsonEnd);
-      const data = JSON.parse(jsonText);
-      
-      if (!data.table || !data.table.rows) {
-        console.warn(`No table data found via proxy for ${year}`);
-        return { categories: {}, order: [] };
-      }
-      
-      // Process all rows
-      const rows = data.table.rows;
-      const categories = {};
-      const categoryOrder = [];
-      const categorySet = new Set();
-      
-      for (let i = 0; i < rows.length; i++) {
-        const row = rows[i];
-        const cells = row.c;
-        
-        if (!cells || cells.length < 1) continue;
-        
-        const category = cells[0]?.v || '';
-        const item = cells[1]?.v || '';
-        const artist = cells[2]?.v || '';
-        const feature = cells[3]?.v || '';
-        const status = cells[4]?.v || '';
-        
-        if (category && !categorySet.has(category)) {
-          categorySet.add(category);
-          categoryOrder.push(category);
+      if (altResponse.ok) {
+        const data = await altResponse.json();
+        if (data.values) {
+          // Process values array (skip header row)
+          const rows = data.values.slice(1); // Skip header
+          const categories = {};
+          const categoryOrder = [];
+          const categorySet = new Set();
+          
+          for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+            if (!row || row.length < 5) continue;
+            
+            const category = row[0] || '';
+            const item = row[1] || '';
+            const artist = row[2] || '';
+            const feature = row[3] || '';
+            const status = row[4] || '';
+            
+            if (!category || category.trim() === '') continue;
+            
+            if (!categorySet.has(category)) {
+              categorySet.add(category);
+              categoryOrder.push(category);
+            }
+            
+            if (!categories[category]) {
+              categories[category] = [];
+            }
+            
+            categories[category].push({
+              item: item,
+              artist: artist,
+              feature: feature,
+              status: status.toLowerCase().includes('win') ? 'Winner' : 'Nominated',
+              year: year
+            });
+          }
+          
+          const result = {
+            categories: categories,
+            order: categoryOrder
+          };
+          
+          dataCache[cacheKey] = result;
+          console.log(`${year} loaded via alternative method: ${Object.keys(categories).length} categories`);
+          return result;
         }
-        
-        if (!category || category.trim() === '') continue;
-        
-        if (!categories[category]) {
-          categories[category] = [];
-        }
-        
-        categories[category].push({
-          item: item || artist || '',
-          artist: artist || '',
-          feature: feature || '',
-          status: (status || '').toLowerCase().includes('win') ? 'Winner' : 'Nominated',
-          year: year
-        });
       }
-      
-      const result = {
-        categories: categories,
-        order: categoryOrder
-      };
-      
-      // Cache the data
-      dataCache[cacheKey] = result;
-      console.log(`Data for ${year} edition loaded via proxy. Categories: ${Object.keys(categories).length}`);
-      
-      return result;
-    } catch (proxyError) {
-      console.error(`Proxy also failed for ${year}:`, proxyError);
-      throw new Error(`Failed to load data for ${year} edition: ${error.message}`);
+    } catch (altError) {
+      console.error(`Alternative method also failed for ${year}:`, altError);
     }
+    
+    throw new Error(`Failed to load data for ${year} edition: ${error.message}`);
   }
 }
 
@@ -1232,6 +1227,7 @@ async function openEdition(year) {
         <div class="empty-state">
           <i class="fas fa-trophy" style="font-size: 48px; color: var(--gold); margin-bottom: 20px;"></i>
           <p>No data available for the ${year} edition.</p>
+          <p style="font-size: 14px; margin-top: 10px;">This might be due to CORS restrictions. Try refreshing the page.</p>
         </div>
       `;
       return;
@@ -1241,6 +1237,11 @@ async function openEdition(year) {
     
     // Use the order from spreadsheet or sort alphabetically if order not available
     const sortedCategories = order.length > 0 ? order : Object.keys(categories).sort();
+    
+    // Debug info
+    html += `<div style="margin-bottom: 20px; padding: 10px; background-color: #f0f0f0; border-radius: 5px; font-size: 14px;">
+      Showing ${Object.keys(categories).length} categories with ${Object.values(categories).reduce((sum, arr) => sum + arr.length, 0)} total entries for ${year}
+    </div>`;
     
     for (const categoryName of sortedCategories) {
       const nominees = categories[categoryName];
@@ -1257,7 +1258,7 @@ async function openEdition(year) {
       html += `
         <div class="category-container">
           <div class="category-header" onclick="toggleCategory('${year}-${categoryName.replace(/'/g, "\\'")}')">
-            <h3>${categoryName}</h3>
+            <h3>${categoryName} (${nominees.length})</h3>
             <span class="category-toggle">+</span>
           </div>
           <div class="nominees-list" id="category-${year}-${categoryName.replace(/[^a-zA-Z0-9]/g, '-')}">
@@ -1267,10 +1268,13 @@ async function openEdition(year) {
         const isWinner = nominee.status === 'Winner';
         const showFeature = nominee.feature && nominee.feature.trim() !== '' && !NO_FEAT_CATEGORIES.includes(categoryName);
         
-        // Display item if different from artist name
-        let displayText = nominee.artist || 'Unknown Artist';
-        if (nominee.item && nominee.item.trim() !== '' && nominee.item !== nominee.artist) {
-          displayText = `${nominee.item} — ${nominee.artist}`;
+        // ALWAYS show item if it exists, even if same as artist
+        // This is important for cases where item and artist have same name but are different things
+        let displayText = '';
+        if (nominee.item && nominee.item.trim() !== '') {
+          displayText = nominee.artist ? `${nominee.item} — ${nominee.artist}` : nominee.item;
+        } else {
+          displayText = nominee.artist || 'Unknown';
         }
         
         // Process featured artists
@@ -1285,13 +1289,14 @@ async function openEdition(year) {
         
         html += `
           <div class="nominee-item ${isWinner ? 'winner' : ''}">
-            <img src="${getArtistImage(nominee.artist)}" alt="${nominee.artist}" class="nominee-image">
+            <img src="${generatePlaceholderImage(nominee.artist)}" alt="${nominee.artist}" class="nominee-image" data-artist="${nominee.artist}" onload="tryLoadArtistImage(this)">
             <div class="nominee-info">
               <div class="nominee-name">
                 <a href="#" onclick="openArtist('${encodeURIComponent(nominee.artist)}'); return false;">
-                  ${displayText}
+                  ${nominee.artist || 'Unknown Artist'}
                 </a>
               </div>
+              ${nominee.item && nominee.item.trim() !== '' ? `<div class="nominee-work">${nominee.item}</div>` : ''}
               ${featureHtml}
             </div>
             <div class="nominee-status">
@@ -1322,9 +1327,39 @@ async function openEdition(year) {
     `;
     
     editionContent.innerHTML = html;
+    
+    // Try to load real images after page is rendered
+    setTimeout(() => {
+      document.querySelectorAll('img[data-artist]').forEach(img => {
+        const artist = img.getAttribute('data-artist');
+        if (artist && artist.trim() !== '') {
+          getArtistImage(artist).then(src => {
+            if (src && src !== img.src && !src.includes('data:image/svg+xml')) {
+              img.src = src;
+            }
+          });
+        }
+      });
+    }, 500);
   } catch (error) {
     console.error('Error loading edition:', error);
     editionContent.innerHTML = renderError(`Failed to load award data for ${year}. Please check your connection and try again. Error: ${error.message}`);
+  }
+}
+
+// Function to try loading artist image after initial render
+async function tryLoadArtistImage(imgElement) {
+  const artist = imgElement.getAttribute('data-artist');
+  if (artist && artist.trim() !== '') {
+    try {
+      const imageSrc = await getArtistImage(artist);
+      // Only update if we got a non-placeholder image
+      if (imageSrc && !imageSrc.includes('data:image/svg+xml') && imageSrc !== imgElement.src) {
+        imgElement.src = imageSrc;
+      }
+    } catch (error) {
+      console.log(`Failed to load image for ${artist}:`, error.message);
+    }
   }
 }
 
@@ -1446,9 +1481,10 @@ async function openCategory(categoryNameEncoded) {
         const isWinner = entry.status === 'Winner';
         const showFeature = entry.feature && entry.feature.trim() !== '' && !NO_FEAT_CATEGORIES.includes(categoryName);
         
-        let displayItem = entry.artist;
-        if (entry.item && entry.item.trim() !== '' && entry.item !== entry.artist) {
-          displayItem = `${entry.item} — ${entry.artist}`;
+        // ALWAYS show item if it exists
+        let displayItem = entry.artist || 'Unknown Artist';
+        if (entry.item && entry.item.trim() !== '') {
+          displayItem = entry.artist ? `${entry.item} — ${entry.artist}` : entry.item;
         }
         
         // Process featured artists
@@ -1651,10 +1687,13 @@ async function openArtist(encodedName) {
       }
     }
     
+    // Try to get artist image
+    const artistImage = await getArtistImage(artistName);
+    
     // Render artist profile
     let html = `
       <div class="artist-header">
-        <img src="${getArtistImage(artistName)}" alt="${artistName}" class="artist-image">
+        <img src="${artistImage}" alt="${artistName}" class="artist-image">
         <div class="artist-details">
           <h2>${artistName}</h2>
           <div class="artist-stats">
@@ -1701,7 +1740,11 @@ async function openArtist(encodedName) {
       
       for (const year of sortedYears) {
         winsByYear[year].forEach(win => {
-          const displayItem = win.item && win.item !== artistName ? win.item : '';
+          // ALWAYS show item if it exists
+          let displayItem = '';
+          if (win.item && win.item.trim() !== '') {
+            displayItem = win.item !== artistName ? win.item : `"${win.item}"`;
+          }
           
           html += `
             <div class="award-card">
@@ -1755,7 +1798,12 @@ async function openArtist(encodedName) {
       
       for (const year of sortedYears) {
         nominationsByYear[year].forEach(nomination => {
-          const displayItem = nomination.item && nomination.item !== artistName ? nomination.item : '';
+          // ALWAYS show item if it exists
+          let displayItem = '';
+          if (nomination.item && nomination.item.trim() !== '') {
+            displayItem = nomination.item !== artistName ? nomination.item : `"${nomination.item}"`;
+          }
+          
           const isWin = nomination.status === 'Winner';
           
           html += `
@@ -1870,11 +1918,12 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize
   showHome();
   
-  // Test data loading
-  console.log('Daegon Awards initialized.');
+  // Pre-load some data for faster navigation
+  setTimeout(() => {
+    fetchSheetData(2023).catch(err => console.log('Pre-load 2023 failed:', err.message));
+    fetchSheetData(2022).catch(err => console.log('Pre-load 2022 failed:', err.message));
+  }, 1000);
 });
 </script>
 </body>
 </html>
-
-
