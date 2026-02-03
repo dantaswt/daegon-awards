@@ -27,7 +27,7 @@ header{
   top:0;
   z-index:10;
   background:#fff;
-  padding:30px 20px;
+  padding:20px 20px;
   text-align:center;
   border-bottom:3px solid var(--gold);
 }
@@ -36,13 +36,14 @@ header h1{
   margin:0;
   font-family:"Times New Roman",serif;
   letter-spacing:6px;
-  font-size:40px;
+  font-size:36px;
 }
 
 nav a{
   text-decoration:none;
   font-weight:bold;
   color:#000;
+  margin:0 10px;
 }
 
 .container{
@@ -56,15 +57,16 @@ nav a{
 /* HOME */
 .editions{
   display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-  gap:30px;
+  grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+  gap:20px;
+  margin-top:30px;
 }
 
 .edition-card{
-  padding:60px;
+  padding:50px 20px;
   text-align:center;
   border:2px solid #000;
-  font-size:28px;
+  font-size:24px;
   font-weight:bold;
   cursor:pointer;
   transition:.3s;
@@ -73,18 +75,19 @@ nav a{
 .edition-card:hover{
   background:var(--gold);
   color:#fff;
-  transform:translateY(-6px);
+  transform:translateY(-4px);
 }
 
 /* CATEGORY */
 .category{
-  margin-bottom:60px;
+  margin-bottom:50px;
 }
 
 .category h2{
   border-bottom:2px solid var(--gold);
   padding-bottom:10px;
   font-family:"Times New Roman",serif;
+  font-size:24px;
 }
 
 .nominee{
@@ -94,6 +97,11 @@ nav a{
   padding:12px;
   margin:10px 0;
   border-left:4px solid transparent;
+  transition:background-color 0.2s;
+}
+
+.nominee:hover{
+  background-color:#f9f9f9;
 }
 
 .nominee img{
@@ -107,6 +115,7 @@ nav a{
 .nominee a{
   text-decoration:none;
   color:#000;
+  font-weight:bold;
 }
 
 .winner{
@@ -120,6 +129,7 @@ nav a{
   font-size:12px;
   padding:4px 10px;
   border-radius:20px;
+  white-space:nowrap;
 }
 
 .badge.winner{background:var(--gold);color:#fff}
@@ -131,14 +141,30 @@ nav a{
   gap:30px;
   align-items:center;
   flex-wrap:wrap;
+  margin-bottom:30px;
 }
 
 .artist-profile img{
-  width:180px;
-  height:180px;
+  width:150px;
+  height:150px;
   border-radius:50%;
   border:4px solid var(--gold);
   object-fit:cover;
+}
+
+.loading{
+  text-align:center;
+  padding:20px;
+  color:#666;
+  font-style:italic;
+}
+
+.error{
+  background:#ffe6e6;
+  padding:15px;
+  border-radius:5px;
+  margin:20px 0;
+  color:#cc0000;
 }
 
 footer{
@@ -146,6 +172,7 @@ footer{
   padding:30px;
   border-top:1px solid #ddd;
   color:var(--gray);
+  margin-top:50px;
 }
 </style>
 </head>
@@ -156,11 +183,13 @@ footer{
   <h1>DAEGON AWARDS</h1>
   <nav>
     <a href="#" id="homeLink">Home</a>
+    <a href="#" id="viewData">View Data Source</a>
   </nav>
 </header>
 
 <section id="home" class="container">
   <h2>Recent Editions</h2>
+  <p>Select an edition to view categories and nominees</p>
   <div class="editions">
     <div class="edition-card" data-year="2017">2017</div>
     <div class="edition-card" data-year="2018">2018</div>
@@ -169,6 +198,7 @@ footer{
 
 <section id="edition" class="container hidden">
   <h2 id="editionTitle"></h2>
+  <div id="loading" class="loading">Loading data...</div>
   <div id="categories"></div>
 </section>
 
@@ -180,7 +210,10 @@ footer{
   <div id="artistNominations"></div>
 </section>
 
-<footer>© Daegon Awards</footer>
+<footer>
+  <p>© Daegon Awards</p>
+  <p style="font-size:14px;margin-top:10px;">Data sourced from Google Sheets</p>
+</footer>
 
 <script>
 /* ================= ELEMENTS ================= */
@@ -192,130 +225,191 @@ const editionTitleEl = document.getElementById("editionTitle");
 const artistProfileEl = document.getElementById("artistProfile");
 const artistWinsEl = document.getElementById("artistWins");
 const artistNominationsEl = document.getElementById("artistNominations");
+const loadingEl = document.getElementById("loading");
 
 /* ================= DATA ================= */
 const editions = {
-  2017:{sheetId:"1DNb6uYi6K231-fhrSt3XPlaag8eG9ZFVHhvSXyjWCuk",gid:"0"},
-  2018:{sheetId:"1DNb6uYi6K231-fhrSt3XPlaag8eG9ZFVHhvSXyjWCuk",gid:"912023648"}
+  2017: {
+    sheetId: "1DNb6uYi6K231-fhrSt3XPlaag8eG9ZFVHhvSXyjWCuk",
+    gid: "0",
+    name: "2017 Edition"
+  },
+  2018: {
+    sheetId: "1DNb6uYi6K231-fhrSt3XPlaag8eG9ZFVHhvSXyjWCuk",
+    gid: "912023648",
+    name: "2018 Edition"
+  }
 };
 
-const NO_FEAT = ["Artist of the Year","Best New Artist"];
+const NO_FEAT = ["Artist of the Year", "Best New Artist"];
+
+// Simple placeholder images by artist name initials
+function getPlaceholderImage(name) {
+  const initials = name.split(' ').map(n => n[0]).join('').toUpperCase();
+  const colors = ['#c9a44c', '#2c3e50', '#3498db', '#e74c3c', '#2ecc71'];
+  const color = colors[initials.charCodeAt(0) % colors.length];
+  
+  return `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="${color}" rx="50"/><text x="50" y="55" font-family="Arial" font-size="40" fill="white" text-anchor="middle" dominant-baseline="middle">${initials.substring(0,2)}</text></svg>`;
+}
 
 /* ================= HELPERS ================= */
-function hideAll(){
+function hideAll() {
   homeEl.classList.add("hidden");
   editionEl.classList.add("hidden");
   artistEl.classList.add("hidden");
 }
 
-function showHome(){
+function showHome() {
   hideAll();
   homeEl.classList.remove("hidden");
 }
 
-document.getElementById("homeLink").onclick = showHome;
+document.getElementById("homeLink").onclick = function(e) {
+  e.preventDefault();
+  showHome();
+};
 
-function fetchSheet(id,gid){
-  return fetch(`https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:json&gid=${gid}`)
-    .then(r=>r.text())
-    .then(t=>JSON.parse(t.substring(47).slice(0,-2)));
-}
+document.getElementById("viewData").onclick = function(e) {
+  e.preventDefault();
+  window.open("https://docs.google.com/spreadsheets/d/1DNb6uYi6K231-fhrSt3XPlaag8eG9ZFVHhvSXyjWCuk", "_blank");
+};
 
-function artistImage(name){
-  return fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(name)}`)
-    .then(r=>r.json())
-    .then(d=>d.thumbnail?.source || "https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png");
+function fetchSheet(year) {
+  const edition = editions[year];
+  if (!edition) return Promise.reject("Edition not found");
+  
+  // Using JSONP-like approach with proxy to avoid CORS issues
+  const url = `https://docs.google.com/spreadsheets/d/${edition.sheetId}/gviz/tq?tqx=out:json&gid=${edition.gid}`;
+  
+  return fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`)
+    .then(response => {
+      if (!response.ok) throw new Error('Network response was not ok');
+      return response.json();
+    })
+    .then(data => {
+      try {
+        const text = data.contents;
+        const jsonStart = text.indexOf('{');
+        const jsonEnd = text.lastIndexOf('}') + 1;
+        const jsonText = text.substring(jsonStart, jsonEnd);
+        return JSON.parse(jsonText);
+      } catch (error) {
+        throw new Error('Failed to parse spreadsheet data');
+      }
+    })
+    .catch(error => {
+      console.error('Error fetching sheet:', error);
+      throw error;
+    });
 }
 
 /* ================= EDITION ================= */
-document.querySelectorAll(".edition-card").forEach(card=>{
-  card.onclick = ()=> openEdition(card.dataset.year);
+document.querySelectorAll(".edition-card").forEach(card => {
+  card.onclick = () => openEdition(card.dataset.year);
 });
 
-function openEdition(year){
+function openEdition(year) {
   hideAll();
   editionEl.classList.remove("hidden");
   editionTitleEl.innerText = `Daegon Awards ${year}`;
   categoriesEl.innerHTML = "";
-
-  fetchSheet(editions[year].sheetId,editions[year].gid).then(data=>{
+  loadingEl.style.display = "block";
+  
+  fetchSheet(year).then(data => {
+    loadingEl.style.display = "none";
     const rows = data.table.rows.slice(1);
     const cats = {};
-
-    rows.forEach(r=>{
-      const c=r.c[0]?.v;
-      if(!c) return;
-      const item=r.c[1]?.v;
-      const artist=r.c[2]?.v;
-      const feature=r.c[3]?.v;
-      const status=r.c[4]?.v;
-      if(!cats[c]) cats[c]=[];
-      cats[c].push({item,artist,feature,status});
+    
+    rows.forEach(r => {
+      const c = r.c[0]?.v;
+      if (!c) return;
+      const item = r.c[1]?.v || "";
+      const artist = r.c[2]?.v || "";
+      const feature = r.c[3]?.v || "";
+      const status = r.c[4]?.v || "";
+      
+      if (!cats[c]) cats[c] = [];
+      cats[c].push({ item, artist, feature, status });
     });
-
-    for(const c in cats){
-      const block=document.createElement("div");
-      block.className="category";
-      block.innerHTML=`<h2>${c}</h2>`;
-
+    
+    for (const c in cats) {
+      const block = document.createElement("div");
+      block.className = "category";
+      block.innerHTML = `<h2>${c}</h2>`;
+      
       cats[c]
-        .sort((a,b)=>(b.status==="Winner")-(a.status==="Winner"))
-        .forEach(async n=>{
-          const img=await artistImage(n.artist);
-          const text=(!n.item||n.item==="-"?n.artist:`${n.item} — ${n.artist}`);
-          const showFeat=n.feature && !NO_FEAT.includes(c);
-
-          const row=document.createElement("div");
-          row.className="nominee"+(n.status==="Winner"?" winner":"");
-          row.innerHTML=`
-            <img src="${img}">
-            <a href="#" onclick="openArtist('${encodeURIComponent(n.artist)}')">${text}</a>
-            ${showFeat?`<span style="color:#666"> feat. ${n.feature}</span>`:""}
-            <span class="badge ${n.status==="Winner"?"winner":"nominated"}">
-              ${n.status==="Winner"?"Winner":"Nominated"}
+        .sort((a, b) => (b.status === "Winner") - (a.status === "Winner"))
+        .forEach(n => {
+          const text = (!n.item || n.item === "-" ? n.artist : `${n.item} — ${n.artist}`);
+          const showFeat = n.feature && !NO_FEAT.includes(c);
+          
+          const row = document.createElement("div");
+          row.className = "nominee" + (n.status === "Winner" ? " winner" : "");
+          row.innerHTML = `
+            <img src="${getPlaceholderImage(n.artist)}" alt="${n.artist}">
+            <a href="#" onclick="openArtist('${encodeURIComponent(n.artist)}'); return false;">${text}</a>
+            ${showFeat ? `<span style="color:#666"> feat. ${n.feature}</span>` : ""}
+            <span class="badge ${n.status === "Winner" ? "winner" : "nominated"}">
+              ${n.status === "Winner" ? "Winner" : "Nominated"}
             </span>`;
           block.appendChild(row);
         });
-
+      
       categoriesEl.appendChild(block);
     }
+  }).catch(error => {
+    loadingEl.innerHTML = `<div class="error">Failed to load data. Please check your connection or try again later.</div>`;
   });
 }
 
 /* ================= ARTIST ================= */
-function openArtist(enc){
-  const name=decodeURIComponent(enc);
+function openArtist(enc) {
+  const name = decodeURIComponent(enc);
   hideAll();
   artistEl.classList.remove("hidden");
-  artistProfileEl.innerHTML="";
-  artistWinsEl.innerHTML="";
-  artistNominationsEl.innerHTML="";
-
-  artistImage(name).then(img=>{
-    artistProfileEl.innerHTML=`
-      <div class="artist-profile">
-        <img src="${img}">
-        <div>
-          <h2>${name}</h2>
-        </div>
-      </div>`;
-  });
-
-  Object.keys(editions).forEach(y=>{
-    fetchSheet(editions[y].sheetId,editions[y].gid).then(data=>{
-      data.table.rows.slice(1).forEach(r=>{
-        const artists=[r.c[2]?.v, ...(r.c[3]?.v||"").split(",").map(a=>a.trim())].filter(Boolean);
-        if(!artists.includes(name)) return;
-
-        const div=document.createElement("div");
-        div.className="nominee"+(r.c[4]?.v==="Winner"?" winner":"");
-        div.innerHTML=`<strong>${y}</strong> — ${r.c[0]?.v}<br>${r.c[1]?.v||name}`;
-
-        (r.c[4]?.v==="Winner"?artistWinsEl:artistNominationsEl).appendChild(div);
+  artistProfileEl.innerHTML = "";
+  artistWinsEl.innerHTML = "";
+  artistNominationsEl.innerHTML = "";
+  
+  artistProfileEl.innerHTML = `
+    <div class="artist-profile">
+      <img src="${getPlaceholderImage(name)}" alt="${name}">
+      <div>
+        <h2>${name}</h2>
+        <p>Click on Home to browse other artists</p>
+      </div>
+    </div>`;
+  
+  // Load artist data from all editions
+  const years = Object.keys(editions);
+  let loadedCount = 0;
+  
+  years.forEach(y => {
+    fetchSheet(y).then(data => {
+      data.table.rows.slice(1).forEach(r => {
+        const artists = [r.c[2]?.v, ...(r.c[3]?.v || "").split(",").map(a => a.trim())].filter(Boolean);
+        if (!artists.includes(name)) return;
+        
+        const div = document.createElement("div");
+        div.className = "nominee" + (r.c[4]?.v === "Winner" ? " winner" : "");
+        div.innerHTML = `<strong>${y}</strong> — ${r.c[0]?.v}<br>${r.c[1]?.v || name}`;
+        
+        (r.c[4]?.v === "Winner" ? artistWinsEl : artistNominationsEl).appendChild(div);
       });
+    }).catch(error => {
+      console.error(`Error loading ${y} data:`, error);
+    }).finally(() => {
+      loadedCount++;
+      if (loadedCount === years.length && artistWinsEl.children.length === 0 && artistNominationsEl.children.length === 0) {
+        artistWinsEl.innerHTML = "<p>No wins found</p>";
+        artistNominationsEl.innerHTML = "<p>No nominations found</p>";
+      }
     });
   });
 }
+
+// Initialize
+showHome();
 </script>
 
 </body>
