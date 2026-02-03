@@ -806,7 +806,7 @@ function showAbout() {
 }
 
 function getPlaceholderImage(name) {
-  if (!name) return 'https://via.placeholder.com/150/cccccc/333333?text=Artist';
+  if (!name || name.trim() === '') return 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="150" height="150" viewBox="0 0 150 150"><circle cx="75" cy="75" r="75" fill="#cccccc"/><text x="75" y="85" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="60" font-weight="bold">?</text></svg>';
   
   // Use cached image if available
   if (artistImageCache[name]) {
@@ -814,12 +814,14 @@ function getPlaceholderImage(name) {
   }
   
   // Generate initials
-  const initials = name
-    .split(' ')
-    .map(part => part[0])
-    .join('')
-    .toUpperCase()
-    .substring(0, 2);
+  const words = name.split(' ').filter(word => word.length > 0);
+  let initials = '';
+  
+  if (words.length === 1) {
+    initials = words[0].substring(0, 2).toUpperCase();
+  } else {
+    initials = (words[0][0] + words[words.length - 1][0]).toUpperCase();
+  }
   
   // Color based on name hash
   const colors = [
@@ -853,6 +855,7 @@ async function fetchSheetData(year) {
   // Check cache first
   const cacheKey = `edition-${year}`;
   if (dataCache[cacheKey]) {
+    console.log(`Using cached data for ${year}`);
     return dataCache[cacheKey];
   }
   
@@ -862,13 +865,20 @@ async function fetchSheetData(year) {
   }
   
   try {
-    // Using a CORS proxy to access Google Sheets
-    const proxyUrl = 'https://corsproxy.io/?';
-    const targetUrl = `https://docs.google.com/spreadsheets/d/${edition.sheetId}/gviz/tq?tqx=out:json&gid=${edition.gid}`;
-    
     console.log(`Fetching data for ${year} edition...`);
     
-    const response = await fetch(proxyUrl + encodeURIComponent(targetUrl));
+    // Usando uma abordagem mais direta para Google Sheets
+    // O Google Sheets permite CORS para a API de visualização
+    const url = `https://docs.google.com/spreadsheets/d/${edition.sheetId}/gviz/tq?tqx=out:json&gid=${edition.gid}`;
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      mode: 'cors',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      }
+    });
     
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -876,14 +886,23 @@ async function fetchSheetData(year) {
     
     const text = await response.text();
     
-    // Extract JSON from the response
+    // Parse the response from Google Sheets API
+    // The response starts with "/*O_o*/" and then "google.visualization.Query.setResponse("
     const jsonStart = text.indexOf('{');
     const jsonEnd = text.lastIndexOf('}') + 1;
-    const jsonText = text.substring(jsonStart, jsonEnd);
     
+    if (jsonStart === -1 || jsonEnd === -1) {
+      throw new Error('Invalid response format from Google Sheets');
+    }
+    
+    const jsonText = text.substring(jsonStart, jsonEnd);
     const data = JSON.parse(jsonText);
     
-    // Process the data
+    if (!data.table || !data.table.rows) {
+      throw new Error('No data found in response');
+    }
+    
+    // Process the data according to the column structure
     const rows = data.table.rows;
     const categories = {};
     
@@ -894,35 +913,106 @@ async function fetchSheetData(year) {
       
       if (!cells || cells.length < 5) continue;
       
+      // Extract data based on column structure:
+      // 0: category, 1: item, 2: artist, 3: feature, 4: status
       const category = cells[0]?.v || '';
-      const work = cells[1]?.v || '';
+      const item = cells[1]?.v || '';
       const artist = cells[2]?.v || '';
       const feature = cells[3]?.v || '';
       const status = cells[4]?.v || '';
       
-      if (!category) continue;
+      if (!category || !artist || category.trim() === '' || artist.trim() === '') continue;
       
       if (!categories[category]) {
         categories[category] = [];
       }
       
       categories[category].push({
-        work,
-        artist,
-        feature,
-        status,
-        year
+        item: item || artist, // If no item, use artist name
+        artist: artist,
+        feature: feature,
+        status: status.toLowerCase().includes('win') ? 'Winner' : 'Nominated',
+        year: year
       });
     }
     
     // Cache the data
     dataCache[cacheKey] = categories;
-    console.log(`Data for ${year} edition loaded successfully. Categories: ${Object.keys(categories).length}`);
+    console.log(`Data for ${year} edition loaded successfully. Categories: ${Object.keys(categories).length}, Total entries: ${Object.values(categories).flat().length}`);
     
     return categories;
   } catch (error) {
     console.error(`Error fetching edition ${year}:`, error);
-    throw error;
+    
+    // Fallback: Try with a CORS proxy as backup
+    try {
+      console.log(`Trying CORS proxy for ${year}...`);
+      const proxyUrl = 'https://api.allorigins.win/raw?url=';
+      const targetUrl = `https://docs.google.com/spreadsheets/d/${edition.sheetId}/gviz/tq?tqx=out:json&gid=${edition.gid}`;
+      
+      const proxyResponse = await fetch(proxyUrl + encodeURIComponent(targetUrl));
+      
+      if (!proxyResponse.ok) {
+        throw new Error(`Proxy HTTP error! status: ${proxyResponse.status}`);
+      }
+      
+      const text = await proxyResponse.text();
+      
+      // Parse the response
+      const jsonStart = text.indexOf('{');
+      const jsonEnd = text.lastIndexOf('}') + 1;
+      
+      if (jsonStart === -1 || jsonEnd === -1) {
+        throw new Error('Invalid response format from proxy');
+      }
+      
+      const jsonText = text.substring(jsonStart, jsonEnd);
+      const data = JSON.parse(jsonText);
+      
+      if (!data.table || !data.table.rows) {
+        throw new Error('No data found in proxy response');
+      }
+      
+      // Process the data
+      const rows = data.table.rows;
+      const categories = {};
+      
+      for (let i = 1; i < rows.length; i++) {
+        const row = rows[i];
+        const cells = row.c;
+        
+        if (!cells || cells.length < 5) continue;
+        
+        const category = cells[0]?.v || '';
+        const item = cells[1]?.v || '';
+        const artist = cells[2]?.v || '';
+        const feature = cells[3]?.v || '';
+        const status = cells[4]?.v || '';
+        
+        if (!category || !artist || category.trim() === '' || artist.trim() === '') continue;
+        
+        if (!categories[category]) {
+          categories[category] = [];
+        }
+        
+        categories[category].push({
+          item: item || artist,
+          artist: artist,
+          feature: feature,
+          status: status.toLowerCase().includes('win') ? 'Winner' : 'Nominated',
+          year: year
+        });
+      }
+      
+      // Cache the data
+      dataCache[cacheKey] = categories;
+      console.log(`Data for ${year} edition loaded via proxy. Categories: ${Object.keys(categories).length}`);
+      
+      return categories;
+    } catch (proxyError) {
+      console.error(`Proxy also failed for ${year}:`, proxyError);
+      throw new Error(`Failed to load data for ${year} edition: ${error.message}`);
+    }
   }
 }
 
@@ -963,6 +1053,7 @@ async function openEdition(year) {
         <div class="empty-state">
           <i class="fas fa-trophy" style="font-size: 48px; color: var(--gold); margin-bottom: 20px;"></i>
           <p>No data available for the ${year} edition.</p>
+          <p style="font-size: 14px; margin-top: 10px;">The spreadsheet might be empty or have a different format.</p>
         </div>
       `;
       return;
@@ -1000,16 +1091,19 @@ async function openEdition(year) {
         const isWinner = nominee.status === 'Winner';
         const showFeature = nominee.feature && nominee.feature.trim() !== '' && !NO_FEAT_CATEGORIES.includes(categoryName);
         
+        // Display item if different from artist name
+        const displayText = nominee.item && nominee.item !== nominee.artist ? 
+          `${nominee.item} — ${nominee.artist}` : nominee.artist;
+        
         html += `
           <div class="nominee-item ${isWinner ? 'winner' : ''}">
             <img src="${getArtistImage(nominee.artist)}" alt="${nominee.artist}" class="nominee-image">
             <div class="nominee-info">
               <div class="nominee-name">
                 <a href="#" onclick="openArtist('${encodeURIComponent(nominee.artist)}'); return false;">
-                  ${nominee.artist}
+                  ${displayText}
                 </a>
               </div>
-              ${nominee.work && nominee.work.trim() !== '' ? `<div class="nominee-work">${nominee.work}</div>` : ''}
               ${showFeature ? `<div class="nominee-feature">feat. ${nominee.feature}</div>` : ''}
             </div>
             <div class="nominee-status">
@@ -1030,7 +1124,7 @@ async function openEdition(year) {
     editionContent.innerHTML = html;
   } catch (error) {
     console.error('Error loading edition:', error);
-    editionContent.innerHTML = renderError('Failed to load award data. Please check your connection and try again.');
+    editionContent.innerHTML = renderError(`Failed to load award data for ${year}. Please check your connection and try again. Error: ${error.message}`);
   }
 }
 
@@ -1043,8 +1137,9 @@ async function openArtist(encodedName) {
   
   try {
     // Fetch data for all editions
-    const years = Object.keys(EDITIONS);
+    const years = Object.keys(EDITIONS).sort((a, b) => parseInt(b) - parseInt(a)); // Newest first
     const allNominations = [];
+    const allEntries = []; // Includes both wins and nominations for counting
     
     for (const year of years) {
       try {
@@ -1057,17 +1152,36 @@ async function openArtist(encodedName) {
             // Skip entries without artist name
             if (!nominee.artist || nominee.artist.trim() === '') continue;
             
-            // Check if this artist is the main artist or a featured artist
+            // Check if this artist is the main artist
             const isMainArtist = nominee.artist === artistName;
-            const isFeaturedArtist = nominee.feature && nominee.feature.includes(artistName);
+            
+            // Check if this artist is a featured artist
+            const isFeaturedArtist = nominee.feature && 
+              nominee.feature.split(',').map(f => f.trim()).includes(artistName);
             
             if (isMainArtist || isFeaturedArtist) {
-              allNominations.push({
+              const entry = {
                 year,
                 category: categoryName,
-                work: nominee.work,
+                item: nominee.item,
                 status: nominee.status,
                 role: isMainArtist ? 'Main Artist' : 'Featured Artist'
+              };
+              
+              allEntries.push(entry);
+              
+              // For wins, add to both wins and nominations
+              if (nominee.status === 'Winner') {
+                allNominations.push({
+                  ...entry,
+                  type: 'win'
+                });
+              }
+              
+              // Always add to nominations (wins are also nominations)
+              allNominations.push({
+                ...entry,
+                type: 'nomination'
               });
             }
           }
@@ -1077,9 +1191,21 @@ async function openArtist(encodedName) {
       }
     }
     
+    // Remove duplicate nominations (wins appear twice)
+    const uniqueNominations = [];
+    const seen = new Set();
+    
+    for (const nom of allNominations) {
+      const key = `${nom.year}-${nom.category}-${nom.item}-${nom.role}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        uniqueNominations.push(nom);
+      }
+    }
+    
     // Separate wins and nominations
-    const wins = allNominations.filter(n => n.status === 'Winner');
-    const nominations = allNominations.filter(n => n.status !== 'Winner');
+    const wins = uniqueNominations.filter(n => n.type === 'win');
+    const nominations = uniqueNominations.filter(n => n.type === 'nomination');
     
     // Render artist profile
     let html = `
@@ -1094,11 +1220,11 @@ async function openArtist(encodedName) {
             </div>
             <div class="stat-item">
               <i class="fas fa-star"></i>
-              <span>${nominations.length} Nominations</span>
+              <span>${uniqueNominations.length} Nominations</span>
             </div>
             <div class="stat-item">
               <i class="fas fa-calendar-alt"></i>
-              <span>${new Set(allNominations.map(n => n.year)).size} Editions</span>
+              <span>${new Set(allEntries.map(n => n.year)).size} Editions</span>
             </div>
           </div>
         </div>
@@ -1110,30 +1236,43 @@ async function openArtist(encodedName) {
       <div class="awards-section">
         <div class="section-title">
           <i class="fas fa-trophy"></i>
-          <span>Award Wins</span>
+          <span>Award Wins (${wins.length})</span>
         </div>
     `;
     
     if (wins.length > 0) {
-      // Sort wins by year (newest first)
-      wins.sort((a, b) => parseInt(b.year) - parseInt(a.year));
+      // Group wins by year
+      const winsByYear = {};
+      wins.forEach(win => {
+        if (!winsByYear[win.year]) {
+          winsByYear[win.year] = [];
+        }
+        winsByYear[win.year].push(win);
+      });
+      
+      // Sort years in descending order
+      const sortedYears = Object.keys(winsByYear).sort((a, b) => parseInt(b) - parseInt(a));
       
       html += '<div class="award-list">';
       
-      wins.forEach(win => {
-        html += `
-          <div class="award-card">
-            <div class="award-year">${win.year}</div>
-            <div class="award-category">${win.category}</div>
-            ${win.work && win.work.trim() !== '' ? `<div class="award-work">${win.work}</div>` : ''}
-            <div>
-              <span class="award-status" style="background-color: var(--gold); color: white; padding: 4px 12px; border-radius: 15px; font-size: 12px; font-weight: 600;">
-                Winner • ${win.role}
-              </span>
+      for (const year of sortedYears) {
+        winsByYear[year].forEach(win => {
+          const displayItem = win.item && win.item !== artistName ? win.item : '';
+          
+          html += `
+            <div class="award-card">
+              <div class="award-year">${win.year}</div>
+              <div class="award-category">${win.category}</div>
+              ${displayItem ? `<div class="award-work">${displayItem}</div>` : ''}
+              <div>
+                <span class="award-status" style="background-color: var(--gold); color: white; padding: 4px 12px; border-radius: 15px; font-size: 12px; font-weight: 600;">
+                  Winner • ${win.role}
+                </span>
+              </div>
             </div>
-          </div>
-        `;
-      });
+          `;
+        });
+      }
       
       html += '</div>';
     } else {
@@ -1146,35 +1285,49 @@ async function openArtist(encodedName) {
     
     html += `</div>`;
     
-    // Render nominations
+    // Render nominations (including wins)
     html += `
       <div class="awards-section">
         <div class="section-title">
           <i class="fas fa-star"></i>
-          <span>Nominations</span>
+          <span>All Nominations (${uniqueNominations.length})</span>
         </div>
     `;
     
-    if (nominations.length > 0) {
-      // Sort nominations by year (newest first)
-      nominations.sort((a, b) => parseInt(b.year) - parseInt(a.year));
+    if (uniqueNominations.length > 0) {
+      // Group nominations by year
+      const nominationsByYear = {};
+      uniqueNominations.forEach(nomination => {
+        if (!nominationsByYear[nomination.year]) {
+          nominationsByYear[nomination.year] = [];
+        }
+        nominationsByYear[nomination.year].push(nomination);
+      });
+      
+      // Sort years in descending order
+      const sortedYears = Object.keys(nominationsByYear).sort((a, b) => parseInt(b) - parseInt(a));
       
       html += '<div class="award-list">';
       
-      nominations.forEach(nomination => {
-        html += `
-          <div class="award-card">
-            <div class="award-year">${nomination.year}</div>
-            <div class="award-category">${nomination.category}</div>
-            ${nomination.work && nomination.work.trim() !== '' ? `<div class="award-work">${nomination.work}</div>` : ''}
-            <div>
-              <span class="award-status" style="background-color: var(--light-gray); color: var(--gray); padding: 4px 12px; border-radius: 15px; font-size: 12px; font-weight: 600;">
-                Nominated • ${nomination.role}
-              </span>
+      for (const year of sortedYears) {
+        nominationsByYear[year].forEach(nomination => {
+          const displayItem = nomination.item && nomination.item !== artistName ? nomination.item : '';
+          const isWin = nomination.type === 'win';
+          
+          html += `
+            <div class="award-card">
+              <div class="award-year">${nomination.year}</div>
+              <div class="award-category">${nomination.category}</div>
+              ${displayItem ? `<div class="award-work">${displayItem}</div>` : ''}
+              <div>
+                <span class="award-status" style="background-color: ${isWin ? 'var(--gold)' : 'var(--light-gray)'}; color: ${isWin ? 'white' : 'var(--gray)'}; padding: 4px 12px; border-radius: 15px; font-size: 12px; font-weight: 600;">
+                  ${isWin ? 'Winner' : 'Nominated'} • ${nomination.role}
+                </span>
+              </div>
             </div>
-          </div>
-        `;
-      });
+          `;
+        });
+      }
       
       html += '</div>';
     } else {
@@ -1190,7 +1343,7 @@ async function openArtist(encodedName) {
     artistContent.innerHTML = html;
   } catch (error) {
     console.error('Error loading artist data:', error);
-    artistContent.innerHTML = renderError('Failed to load artist data. Please try again.');
+    artistContent.innerHTML = renderError('Failed to load artist data. Please try again. Error: ' + error.message);
   }
 }
 
@@ -1249,13 +1402,9 @@ document.addEventListener('DOMContentLoaded', () => {
   backButton.addEventListener('click', showHome);
   backButtonArtist.addEventListener('click', () => {
     // Go back to the last viewed edition or home
-    if (editionTitle.textContent.includes('2017') || editionTitle.textContent.includes('2018') || 
-        editionTitle.textContent.includes('2019') || editionTitle.textContent.includes('2020') ||
-        editionTitle.textContent.includes('2021') || editionTitle.textContent.includes('2022') ||
-        editionTitle.textContent.includes('2023') || editionTitle.textContent.includes('2024') ||
-        editionTitle.textContent.includes('2025')) {
-      const year = editionTitle.textContent.match(/\d{4}/)[0];
-      openEdition(year);
+    const yearMatch = editionTitle.textContent.match(/\d{4}/);
+    if (yearMatch && EDITIONS[yearMatch[0]]) {
+      openEdition(yearMatch[0]);
     } else {
       showHome();
     }
@@ -1265,6 +1414,18 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Initialize
   showHome();
+  
+  // Test one edition to see if data loads
+  console.log('Daegon Awards initialized. Testing data fetch...');
+  
+  // Test fetch for 2023 to see if it works
+  setTimeout(() => {
+    fetchSheetData(2023).then(data => {
+      console.log('Test fetch successful for 2023:', data ? `${Object.keys(data).length} categories loaded` : 'No data');
+    }).catch(err => {
+      console.warn('Test fetch failed for 2023:', err.message);
+    });
+  }, 1000);
 });
 </script>
 </body>
