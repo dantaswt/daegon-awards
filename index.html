@@ -627,6 +627,122 @@ nav a.active::after {
   color: white;
 }
 
+/* Category Filters */
+.category-filters {
+  background: var(--light-gray);
+  padding: 20px;
+  border-radius: 10px;
+  margin-bottom: 30px;
+}
+
+.category-filters h3 {
+  font-size: 18px;
+  margin-bottom: 15px;
+  color: var(--black);
+}
+
+.filter-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.filter-btn {
+  background: white;
+  border: 2px solid var(--light-gray);
+  padding: 8px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gray);
+  transition: all 0.3s;
+}
+
+.filter-btn:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+.filter-btn.active {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: white;
+}
+
+/* Stats Page */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 25px;
+  margin-top: 30px;
+}
+
+.stat-card-large {
+  background: white;
+  border-radius: 10px;
+  padding: 25px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border-top: 4px solid var(--gold);
+}
+
+.stat-card-large h3 {
+  font-size: 18px;
+  margin-bottom: 20px;
+  color: var(--black);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.stat-record-item {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  margin-bottom: 10px;
+  background: var(--light-gray);
+  border-radius: 8px;
+  transition: transform 0.2s;
+}
+
+.stat-record-item:hover {
+  transform: translateX(5px);
+}
+
+.stat-record-item img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-right: 12px;
+  border: 2px solid var(--gold);
+}
+
+.stat-record-info {
+  flex: 1;
+}
+
+.stat-record-name {
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 3px;
+  color: var(--black);
+}
+
+.stat-record-count {
+  font-size: 12px;
+  color: var(--gold);
+  font-weight: 700;
+}
+
+.stat-record-rank {
+  font-weight: 700;
+  color: var(--gold);
+  font-size: 16px;
+  min-width: 30px;
+  text-align: center;
+}
+
 /* All Artists Page */
 .artists-grid {
   display: grid;
@@ -853,6 +969,10 @@ footer {
   .stat-number {
     font-size: 36px;
   }
+  
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 480px) {
@@ -871,6 +991,10 @@ footer {
   .artist-info h1 {
     font-size: 32px;
   }
+  
+  .filter-buttons {
+    justify-content: center;
+  }
 }
 </style>
 </head>
@@ -887,6 +1011,7 @@ footer {
         <li><a href="#" id="homeLink" class="active">Home</a></li>
         <li><a href="#" id="browseCategories">Categories</a></li>
         <li><a href="#" id="browseArtists">Artists</a></li>
+        <li><a href="#" id="statsLink">Stats</a></li>
         <li><a href="#" id="aboutLink">About</a></li>
       </ul>
     </nav>
@@ -999,6 +1124,23 @@ footer {
     </div>
   </section>
 
+  <!-- Stats Section -->
+  <section id="stats" class="container hidden">
+    <div class="edition-header">
+      <h2>Award Statistics</h2>
+      <button class="back-button" id="backButtonStats">
+        <i class="fas fa-arrow-left"></i> Back to Home
+      </button>
+    </div>
+    
+    <div id="statsContent">
+      <div class="loading-container">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Loading statistics...</div>
+      </div>
+    </div>
+  </section>
+
   <!-- About Section -->
   <section id="about" class="container hidden">
     <div class="edition-header">
@@ -1052,6 +1194,7 @@ footer {
       <a href="#" id="footerHome">Home</a>
       <a href="#" id="footerCategories">Categories</a>
       <a href="#" id="footerArtists">Artists</a>
+      <a href="#" id="footerStats">Stats</a>
       <a href="#" id="footerAbout">About</a>
       <a href="https://docs.google.com/spreadsheets/d/1DNb6uYi6K231-fhrSt3XPlaag8eG9ZFVHhvSXyjWCuk" target="_blank">Data Source</a>
     </div>
@@ -1117,6 +1260,7 @@ const NO_FEAT_CATEGORIES = ["Artist of the Year", "Best New Artist"];
 // Global data cache
 const dataCache = {};
 const artistCache = {};
+const statsCache = {};
 
 // Image cache
 const imageCache = new Map();
@@ -1130,6 +1274,7 @@ const sections = {
   categoriesBrowse: document.getElementById('categoriesBrowse'),
   artistsBrowse: document.getElementById('artistsBrowse'),
   artist: document.getElementById('artist'),
+  stats: document.getElementById('stats'),
   about: document.getElementById('about')
 };
 
@@ -1138,7 +1283,8 @@ const contentElements = {
   categoryContent: document.getElementById('categoryContent'),
   categoriesContent: document.getElementById('categoriesContent'),
   artistsContent: document.getElementById('artistsContent'),
-  artistContent: document.getElementById('artistContent')
+  artistContent: document.getElementById('artistContent'),
+  statsContent: document.getElementById('statsContent')
 };
 
 const titleElements = {
@@ -1156,6 +1302,7 @@ const navElements = {
   homeLink: document.getElementById('homeLink'),
   browseCategories: document.getElementById('browseCategories'),
   browseArtists: document.getElementById('browseArtists'),
+  statsLink: document.getElementById('statsLink'),
   aboutLink: document.getElementById('aboutLink')
 };
 
@@ -1163,6 +1310,7 @@ const footerElements = {
   footerHome: document.getElementById('footerHome'),
   footerCategories: document.getElementById('footerCategories'),
   footerArtists: document.getElementById('footerArtists'),
+  footerStats: document.getElementById('footerStats'),
   footerAbout: document.getElementById('footerAbout')
 };
 
@@ -1173,6 +1321,7 @@ const backButtons = {
   backButtonCategories: document.getElementById('backButtonCategories'),
   backButtonArtists: document.getElementById('backButtonArtists'),
   backButtonArtist: document.getElementById('backButtonArtist'),
+  backButtonStats: document.getElementById('backButtonStats'),
   backButtonAbout: document.getElementById('backButtonAbout')
 };
 
@@ -1232,7 +1381,7 @@ async function getArtistImage(artistName, size = 150) {
   // Try to get real image in background
   setTimeout(async () => {
     try {
-      // Try Wikipedia API first
+      // Try Wikipedia API
       const wikiUrl = `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(artistName)}&prop=pageimages&format=json&pithumbsize=${size}&origin=*`;
       const response = await fetch(wikiUrl);
       
@@ -1243,12 +1392,11 @@ async function getArtistImage(artistName, size = 150) {
           const page = Object.values(pages)[0];
           if (page?.thumbnail?.source) {
             imageCache.set(cacheKey, { url: page.thumbnail.source, timestamp: now });
-            return;
           }
         }
       }
     } catch (error) {
-      // Silently fail, we already have a placeholder
+      // Silently fail
     }
   }, 0);
   
@@ -1344,6 +1492,7 @@ async function fetchSheetData(year) {
       }
       
       categories[category].push({
+        category: category.trim(),
         item: item ? item.trim() : '',
         artist: artist ? artist.trim() : '',
         feature: feature ? feature.trim() : '',
@@ -1393,9 +1542,17 @@ async function getAllArtistsData() {
   allData.forEach(editionData => {
     if (!editionData) return;
     
-    Object.values(editionData.categories).forEach(nominees => {
+    Object.entries(editionData.categories).forEach(([categoryName, nominees]) => {
       nominees.forEach(nominee => {
         if (!nominee.artist || nominee.artist.trim() === '') return;
+        
+        const entry = {
+          category: nominee.category,
+          item: nominee.item,
+          status: nominee.status,
+          year: nominee.year,
+          feature: nominee.feature
+        };
         
         // Process main artist
         const mainArtistName = nominee.artist.trim();
@@ -1404,30 +1561,14 @@ async function getAllArtistsData() {
             name: mainArtistName,
             nominations: 0,
             wins: 0,
-            entriesByYear: {},
-            isMainArtist: true
+            entries: [],
+            categories: new Set()
           });
         }
         
         const mainArtist = artistsMap.get(mainArtistName);
-        mainArtist.nominations++;
-        
-        if (!mainArtist.entriesByYear[nominee.year]) {
-          mainArtist.entriesByYear[nominee.year] = [];
-        }
-        
-        mainArtist.entriesByYear[nominee.year].push({
-          category: nominee.category || 'Unknown',
-          item: nominee.item,
-          status: nominee.status,
-          year: nominee.year,
-          role: 'Main Artist',
-          feature: nominee.feature
-        });
-        
-        if (nominee.status === 'Winner') {
-          mainArtist.wins++;
-        }
+        mainArtist.entries.push({ ...entry, role: 'Main Artist' });
+        mainArtist.categories.add(nominee.category);
         
         // Process featured artists
         if (nominee.feature && nominee.feature.trim() !== '') {
@@ -1441,66 +1582,52 @@ async function getAllArtistsData() {
                 name: featuredArtistName,
                 nominations: 0,
                 wins: 0,
-                entriesByYear: {},
-                isMainArtist: false
+                entries: [],
+                categories: new Set()
               });
             }
             
             const featuredArtist = artistsMap.get(featuredArtistName);
-            featuredArtist.nominations++;
-            
-            if (!featuredArtist.entriesByYear[nominee.year]) {
-              featuredArtist.entriesByYear[nominee.year] = [];
-            }
-            
-            featuredArtist.entriesByYear[nominee.year].push({
-              category: nominee.category || 'Unknown',
-              item: nominee.item,
-              status: nominee.status,
-              year: nominee.year,
+            featuredArtist.entries.push({ 
+              ...entry, 
               role: 'Featured Artist',
               mainArtist: mainArtistName
             });
-            
-            if (nominee.status === 'Winner') {
-              featuredArtist.wins++;
-            }
+            featuredArtist.categories.add(nominee.category);
           });
         }
       });
     });
   });
   
+  // Calculate counts and organize data
   const artists = Array.from(artistsMap.values())
     .map(artist => {
-      // Clean up entries by year - remove duplicates
-      Object.keys(artist.entriesByYear).forEach(year => {
-        const entries = artist.entriesByYear[year];
-        const uniqueEntries = [];
-        const seen = new Set();
-        
-        entries.forEach(entry => {
-          const key = `${entry.category}-${entry.item}-${entry.role}`;
-          if (!seen.has(key)) {
-            seen.add(key);
-            uniqueEntries.push(entry);
-          }
-        });
-        
-        // Recalculate wins and nominations for this year
-        const yearWins = uniqueEntries.filter(e => e.status === 'Winner').length;
-        const yearNominations = uniqueEntries.length;
-        
-        // Update artist totals based on unique entries
-        artist.wins = Object.keys(artist.entriesByYear).reduce((sum, y) => {
-          return sum + artist.entriesByYear[y].filter(e => e.status === 'Winner').length;
-        }, 0);
-        
-        artist.nominations = Object.keys(artist.entriesByYear).reduce((sum, y) => {
-          return sum + artist.entriesByYear[y].length;
-        }, 0);
-        
-        artist.entriesByYear[year] = uniqueEntries;
+      // Remove duplicate entries (same category, item, year, role)
+      const uniqueEntries = [];
+      const seen = new Set();
+      
+      artist.entries.forEach(entry => {
+        const key = `${entry.year}-${entry.category}-${entry.item}-${entry.role}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          uniqueEntries.push(entry);
+        }
+      });
+      
+      // Calculate wins and nominations from unique entries
+      artist.entries = uniqueEntries;
+      artist.nominations = uniqueEntries.length;
+      artist.wins = uniqueEntries.filter(e => e.status === 'Winner').length;
+      artist.categories = Array.from(artist.categories);
+      
+      // Organize entries by year
+      artist.entriesByYear = {};
+      uniqueEntries.forEach(entry => {
+        if (!artist.entriesByYear[entry.year]) {
+          artist.entriesByYear[entry.year] = [];
+        }
+        artist.entriesByYear[entry.year].push(entry);
       });
       
       return artist;
@@ -1529,7 +1656,7 @@ async function getArtistData(artistName) {
     const wins = entries.filter(entry => entry.status === 'Winner');
     const nominations = entries.filter(entry => entry.status !== 'Winner');
     
-    // Sort wins by category
+    // Sort by category
     wins.sort((a, b) => a.category.localeCompare(b.category));
     nominations.sort((a, b) => a.category.localeCompare(b.category));
     
@@ -1546,6 +1673,56 @@ async function getArtistData(artistName) {
     organizedData: organizedData,
     years: years
   };
+}
+
+// ================= STATISTICS =================
+async function getStatistics() {
+  if (statsCache.all) {
+    return statsCache.all;
+  }
+  
+  const artists = await getAllArtistsData();
+  
+  // Most wins overall
+  const mostWins = [...artists]
+    .sort((a, b) => b.wins - a.wins || b.nominations - a.nominations)
+    .slice(0, 10)
+    .map((artist, index) => ({ ...artist, rank: index + 1 }));
+  
+  // Most nominations overall
+  const mostNominations = [...artists]
+    .sort((a, b) => b.nominations - a.nominations || b.wins - a.wins)
+    .slice(0, 10)
+    .map((artist, index) => ({ ...artist, rank: index + 1 }));
+  
+  // Wins by year
+  const winsByYear = {};
+  artists.forEach(artist => {
+    Object.entries(artist.entriesByYear).forEach(([year, entries]) => {
+      const wins = entries.filter(e => e.status === 'Winner').length;
+      if (wins > 0) {
+        if (!winsByYear[year]) winsByYear[year] = [];
+        winsByYear[year].push({ name: artist.name, count: wins });
+      }
+    });
+  });
+  
+  // Sort yearly winners
+  Object.keys(winsByYear).forEach(year => {
+    winsByYear[year].sort((a, b) => b.count - a.count);
+  });
+  
+  const stats = {
+    mostWins,
+    mostNominations,
+    winsByYear,
+    totalArtists: artists.length,
+    totalNominations: artists.reduce((sum, a) => sum + a.nominations, 0),
+    totalWins: artists.reduce((sum, a) => sum + a.wins, 0)
+  };
+  
+  statsCache.all = stats;
+  return stats;
 }
 
 // ================= SEARCH FUNCTIONALITY =================
@@ -1586,9 +1763,7 @@ async function performSearch(query) {
             name: nominee.item,
             artist: nominee.artist,
             year: nominee.year,
-            category: Object.keys(editionData.categories).find(cat => 
-              editionData.categories[cat].includes(nominee)
-            ),
+            category: nominee.category,
             match: nominee.item
           });
         }
@@ -1796,6 +1971,9 @@ async function openArtist(encodedName) {
     // Get artist image
     const imageUrl = await getArtistImage(artistName, 300);
     
+    // Get all unique categories for filters
+    const allCategories = [...new Set(artistData.entries.map(e => e.category))].sort();
+    
     // Build the page
     let html = `
       <div class="artist-hero">
@@ -1821,15 +1999,30 @@ async function openArtist(encodedName) {
       </div>
     `;
     
+    // Add category filters
+    if (allCategories.length > 0) {
+      html += `
+        <div class="category-filters">
+          <h3>Filter by Category</h3>
+          <div class="filter-buttons">
+            <button class="filter-btn active" data-category="all">All Categories</button>
+            ${allCategories.map(category => `
+              <button class="filter-btn" data-category="${encodeURIComponent(category)}">${category}</button>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+    
     // Add awards organized by edition
     if (artistData.years && artistData.years.length > 0) {
-      html += `<div class="edition-awards">`;
+      html += `<div class="edition-awards" id="artistAwardsContainer">`;
       
       artistData.years.forEach(year => {
         const yearData = artistData.organizedData[year];
         
         html += `
-          <div class="edition-year-section">
+          <div class="edition-year-section" data-year="${year}">
             <div class="edition-year-header">${year} Edition</div>
             <div class="edition-awards-list">
         `;
@@ -1844,7 +2037,7 @@ async function openArtist(encodedName) {
               </div>
               <div class="awards-grid">
                 ${yearData.wins.map(entry => `
-                  <div class="award-item winner">
+                  <div class="award-item winner" data-category="${encodeURIComponent(entry.category)}">
                     <div class="award-category">${entry.category}</div>
                     ${entry.item ? `<div class="award-work">${entry.item}</div>` : ''}
                     <div style="margin-top: 10px;">
@@ -1867,7 +2060,7 @@ async function openArtist(encodedName) {
               </div>
               <div class="awards-grid">
                 ${yearData.nominations.map(entry => `
-                  <div class="award-item nominated">
+                  <div class="award-item nominated" data-category="${encodeURIComponent(entry.category)}">
                     <div class="award-category">${entry.category}</div>
                     ${entry.item ? `<div class="award-work">${entry.item}</div>` : ''}
                     <div style="margin-top: 10px;">
@@ -1897,7 +2090,42 @@ async function openArtist(encodedName) {
     
     contentElements.artistContent.innerHTML = html;
     
+    // Add filter functionality
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    filterButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        // Update active button
+        filterButtons.forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
+        
+        const selectedCategory = button.dataset.category;
+        
+        // Filter awards
+        const awardItems = document.querySelectorAll('.award-item');
+        awardItems.forEach(item => {
+          if (selectedCategory === 'all' || item.dataset.category === selectedCategory) {
+            item.style.display = 'block';
+          } else {
+            item.style.display = 'none';
+          }
+        });
+        
+        // Update year section visibility
+        document.querySelectorAll('.edition-year-section').forEach(section => {
+          const hasVisibleItems = Array.from(section.querySelectorAll('.award-item'))
+            .some(item => item.style.display !== 'none');
+          
+          if (hasVisibleItems) {
+            section.style.display = 'block';
+          } else {
+            section.style.display = 'none';
+          }
+        });
+      });
+    });
+    
   } catch (error) {
+    console.error('Error loading artist:', error);
     contentElements.artistContent.innerHTML = `
       <div class="error-container">
         <div class="error-icon"><i class="fas fa-exclamation-triangle"></i></div>
@@ -1978,6 +2206,104 @@ async function loadAllArtists() {
   }
 }
 
+// Load statistics page
+async function loadStatistics() {
+  showSection('stats');
+  contentElements.statsContent.innerHTML = `
+    <div class="loading-container">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">Loading statistics...</div>
+    </div>
+  `;
+  
+  try {
+    const stats = await getStatistics();
+    
+    const html = `
+      <div class="stats-grid">
+        <!-- Most Wins -->
+        <div class="stat-card-large">
+          <h3><i class="fas fa-trophy"></i> Most Wins</h3>
+          ${stats.mostWins.map(artist => `
+            <div class="stat-record-item" onclick="openArtist('${encodeURIComponent(artist.name)}')">
+              <span class="stat-record-rank">${artist.rank}</span>
+              <img src="${generatePlaceholderImage(artist.name, 40)}" alt="${artist.name}">
+              <div class="stat-record-info">
+                <div class="stat-record-name">${artist.name}</div>
+                <div class="stat-record-count">${artist.wins} wins • ${artist.nominations} nominations</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+        
+        <!-- Most Nominations -->
+        <div class="stat-card-large">
+          <h3><i class="fas fa-star"></i> Most Nominations</h3>
+          ${stats.mostNominations.map(artist => `
+            <div class="stat-record-item" onclick="openArtist('${encodeURIComponent(artist.name)}')">
+              <span class="stat-record-rank">${artist.rank}</span>
+              <img src="${generatePlaceholderImage(artist.name, 40)}" alt="${artist.name}">
+              <div class="stat-record-info">
+                <div class="stat-record-name">${artist.name}</div>
+                <div class="stat-record-count">${artist.nominations} nominations • ${artist.wins} wins</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+        
+        <!-- Overall Stats -->
+        <div class="stat-card-large">
+          <h3><i class="fas fa-chart-bar"></i> Overall Statistics</h3>
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 20px;">
+            <div style="text-align: center; padding: 15px; background: var(--light-gray); border-radius: 8px;">
+              <div style="font-size: 28px; font-weight: 700; color: var(--gold);">${stats.totalArtists}</div>
+              <div style="font-size: 13px; color: var(--gray);">Artists</div>
+            </div>
+            <div style="text-align: center; padding: 15px; background: var(--light-gray); border-radius: 8px;">
+              <div style="font-size: 28px; font-weight: 700; color: var(--gold);">${stats.totalNominations}</div>
+              <div style="font-size: 13px; color: var(--gray);">Nominations</div>
+            </div>
+            <div style="text-align: center; padding: 15px; background: var(--light-gray); border-radius: 8px;">
+              <div style="font-size: 28px; font-weight: 700; color: var(--gold);">${stats.totalWins}</div>
+              <div style="font-size: 13px; color: var(--gray);">Wins</div>
+            </div>
+            <div style="text-align: center; padding: 15px; background: var(--light-gray); border-radius: 8px;">
+              <div style="font-size: 28px; font-weight: 700; color: var(--gold);">${Object.keys(EDITIONS).length}</div>
+              <div style="font-size: 13px; color: var(--gray);">Editions</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    contentElements.statsContent.innerHTML = html;
+    
+    // Load real images
+    setTimeout(() => {
+      document.querySelectorAll('.stat-record-item img').forEach(img => {
+        const name = img.alt;
+        if (name && name !== '?') {
+          getArtistImage(name, 40).then(src => {
+            if (src && !src.includes('data:image/svg+xml')) {
+              img.src = src;
+            }
+          });
+        }
+      });
+    }, 100);
+  } catch (error) {
+    contentElements.statsContent.innerHTML = `
+      <div class="error-container">
+        <div class="error-icon"><i class="fas fa-exclamation-triangle"></i></div>
+        <div class="error-text">Failed to load statistics</div>
+        <button class="retry-button" onclick="loadStatistics()">
+          <i class="fas fa-redo"></i> Retry
+        </button>
+      </div>
+    `;
+  }
+}
+
 // ================= EVENT LISTENERS =================
 document.addEventListener('DOMContentLoaded', () => {
   // Initialize
@@ -2018,18 +2344,63 @@ document.addEventListener('DOMContentLoaded', () => {
   
   navElements.browseCategories.addEventListener('click', (e) => {
     e.preventDefault();
-    // Placeholder for categories page
     showSection('categoriesBrowse');
     contentElements.categoriesContent.innerHTML = `
-      <div class="empty-state">
-        <p>Categories page coming soon...</p>
+      <div class="loading-container">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Loading categories...</div>
       </div>
     `;
+    
+    // Load categories page
+    setTimeout(async () => {
+      try {
+        const allData = await loadAllData();
+        const categoriesSet = new Set();
+        
+        allData.forEach(edition => {
+          if (edition && edition.categories) {
+            Object.keys(edition.categories).forEach(cat => {
+              categoriesSet.add(cat);
+            });
+          }
+        });
+        
+        const categories = Array.from(categoriesSet).sort();
+        contentElements.categoriesContent.innerHTML = `
+          <div style="margin-bottom: 20px;">
+            <p style="color: var(--gray);">${categories.length} categories across all editions</p>
+          </div>
+          <div class="awards-grid">
+            ${categories.map(category => `
+              <div class="award-item" onclick="openCategoryPage('${encodeURIComponent(category)}')" style="cursor: pointer;">
+                <div class="award-category">${category}</div>
+                <div style="margin-top: 10px; font-size: 14px; color: var(--gray);">
+                  Click to view details
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      } catch (error) {
+        contentElements.categoriesContent.innerHTML = `
+          <div class="error-container">
+            <div class="error-icon"><i class="fas fa-exclamation-triangle"></i></div>
+            <div class="error-text">Failed to load categories</div>
+          </div>
+        `;
+      }
+    }, 100);
   });
   
   navElements.browseArtists.addEventListener('click', (e) => {
     e.preventDefault();
     loadAllArtists();
+  });
+  
+  navElements.statsLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    loadStatistics();
   });
   
   navElements.aboutLink.addEventListener('click', (e) => {
@@ -2045,17 +2416,17 @@ document.addEventListener('DOMContentLoaded', () => {
   
   footerElements.footerCategories.addEventListener('click', (e) => {
     e.preventDefault();
-    showSection('categoriesBrowse');
-    contentElements.categoriesContent.innerHTML = `
-      <div class="empty-state">
-        <p>Categories page coming soon...</p>
-      </div>
-    `;
+    navElements.browseCategories.click();
   });
   
   footerElements.footerArtists.addEventListener('click', (e) => {
     e.preventDefault();
     loadAllArtists();
+  });
+  
+  footerElements.footerStats.addEventListener('click', (e) => {
+    e.preventDefault();
+    loadStatistics();
   });
   
   footerElements.footerAbout.addEventListener('click', (e) => {
@@ -2072,6 +2443,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (yearMatch) openEdition(yearMatch[0]);
     else showSection('home');
   });
+  backButtons.backButtonStats.addEventListener('click', () => showSection('home'));
   backButtons.backButtonAbout.addEventListener('click', () => showSection('home'));
   
   // Pre-load data for faster navigation
@@ -2084,7 +2456,152 @@ document.addEventListener('DOMContentLoaded', () => {
 // Helper functions for global access
 window.openEdition = openEdition;
 window.openArtist = openArtist;
-window.openCategory = openCategory;
+window.openCategoryPage = function(categoryEncoded) {
+  const category = decodeURIComponent(categoryEncoded);
+  showSection('category');
+  titleElements.categoryTitle.textContent = category;
+  
+  contentElements.categoryContent.innerHTML = `
+    <div class="loading-container">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">Loading category data...</div>
+    </div>
+  `;
+  
+  // Load category data
+  setTimeout(async () => {
+    try {
+      const allData = await loadAllData();
+      const categoryEntries = [];
+      
+      allData.forEach(edition => {
+        if (edition && edition.categories && edition.categories[category]) {
+          edition.categories[category].forEach(entry => {
+            categoryEntries.push({
+              ...entry,
+              year: entry.year
+            });
+          });
+        }
+      });
+      
+      if (categoryEntries.length === 0) {
+        contentElements.categoryContent.innerHTML = `
+          <div class="empty-state">
+            <p>No entries found for category "${category}"</p>
+          </div>
+        `;
+        return;
+      }
+      
+      // Sort by year and status
+      categoryEntries.sort((a, b) => {
+        if (b.year !== a.year) return b.year - a.year;
+        if (a.status === 'Winner' && b.status !== 'Winner') return -1;
+        if (a.status !== 'Winner' && b.status === 'Winner') return 1;
+        return a.artist.localeCompare(b.artist);
+      });
+      
+      // Group by year
+      const entriesByYear = {};
+      categoryEntries.forEach(entry => {
+        if (!entriesByYear[entry.year]) entriesByYear[entry.year] = [];
+        entriesByYear[entry.year].push(entry);
+      });
+      
+      let html = `
+        <div style="margin-bottom: 30px;">
+          <div class="stat-card" style="max-width: 300px;">
+            <div class="stat-number">${categoryEntries.length}</div>
+            <div class="stat-label">Total Entries</div>
+          </div>
+        </div>
+        
+        <div class="edition-awards">
+      `;
+      
+      Object.keys(entriesByYear).sort((a, b) => b - a).forEach(year => {
+        const yearEntries = entriesByYear[year];
+        const wins = yearEntries.filter(e => e.status === 'Winner');
+        const nominations = yearEntries.filter(e => e.status !== 'Winner');
+        
+        html += `
+          <div class="edition-year-section">
+            <div class="edition-year-header">${year} Edition</div>
+            <div class="edition-awards-list">
+        `;
+        
+        if (wins.length > 0) {
+          html += `
+            <div class="awards-by-status">
+              <div class="status-header wins">
+                <i class="fas fa-trophy"></i>
+                Wins (${wins.length})
+              </div>
+              <div class="awards-grid">
+                ${wins.map(entry => `
+                  <div class="award-item winner">
+                    <div class="award-category">${category}</div>
+                    <div class="award-work">
+                      <a href="#" onclick="openArtist('${encodeURIComponent(entry.artist)}'); return false;" style="color: var(--black); text-decoration: none; font-weight: 600;">
+                        ${entry.item || entry.artist}
+                      </a>
+                    </div>
+                    <div style="margin-top: 10px;">
+                      <span class="award-status winner">Winner</span>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        }
+        
+        if (nominations.length > 0) {
+          html += `
+            <div class="awards-by-status">
+              <div class="status-header nominations">
+                <i class="fas fa-star"></i>
+                Nominations (${nominations.length})
+              </div>
+              <div class="awards-grid">
+                ${nominations.map(entry => `
+                  <div class="award-item nominated">
+                    <div class="award-category">${category}</div>
+                    <div class="award-work">
+                      <a href="#" onclick="openArtist('${encodeURIComponent(entry.artist)}'); return false;" style="color: var(--black); text-decoration: none; font-weight: 600;">
+                        ${entry.item || entry.artist}
+                      </a>
+                    </div>
+                    <div style="margin-top: 10px;">
+                      <span class="award-status">Nominated</span>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        }
+        
+        html += `
+            </div>
+          </div>
+        `;
+      });
+      
+      html += `</div>`;
+      contentElements.categoryContent.innerHTML = html;
+    } catch (error) {
+      contentElements.categoryContent.innerHTML = `
+        <div class="error-container">
+          <div class="error-icon"><i class="fas fa-exclamation-triangle"></i></div>
+          <div class="error-text">Failed to load category data</div>
+        </div>
+      `;
+    }
+  }, 100);
+};
+
 window.toggleCategory = function(categoryId) {
   const element = document.getElementById(`category-${categoryId.replace(/[^a-zA-Z0-9]/g, '-')}`);
   const toggle = event.currentTarget.querySelector('.category-toggle');
