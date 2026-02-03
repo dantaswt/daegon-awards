@@ -135,8 +135,8 @@ nav a.active::after {
 
 .editions-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 25px;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
   margin-top: 40px;
 }
 
@@ -144,7 +144,7 @@ nav a.active::after {
   background-color: var(--white);
   border: 2px solid var(--gold);
   border-radius: 12px;
-  padding: 40px 20px;
+  padding: 30px 20px;
   text-align: center;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -154,7 +154,7 @@ nav a.active::after {
 }
 
 .edition-card:hover {
-  transform: translateY(-10px);
+  transform: translateY(-8px);
   box-shadow: 0 15px 30px rgba(201, 164, 76, 0.15);
   background-color: var(--gold);
   color: var(--white);
@@ -165,18 +165,19 @@ nav a.active::after {
 }
 
 .edition-year {
-  font-size: 42px;
+  font-size: 36px;
   font-weight: 700;
   color: var(--gold);
-  margin-bottom: 10px;
+  margin-bottom: 5px;
   font-family: 'Times New Roman', serif;
   transition: color 0.3s;
 }
 
 .edition-label {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   letter-spacing: 2px;
+  opacity: 0.8;
 }
 
 /* Edition Page */
@@ -597,22 +598,15 @@ footer {
       <p>Celebrating excellence in music across multiple genres and categories. Explore past editions, winners, and nominees.</p>
     </div>
     
-    <div class="editions-grid">
-      <div class="edition-card" data-year="2017">
-        <div class="edition-year">2017</div>
-        <div class="edition-label">EDITION</div>
-      </div>
-      <div class="edition-card" data-year="2018">
-        <div class="edition-year">2018</div>
-        <div class="edition-label">EDITION</div>
-      </div>
+    <div class="editions-grid" id="editionsGrid">
+      <!-- Edition cards will be populated by JavaScript -->
     </div>
   </section>
 
   <!-- Edition Section -->
   <section id="edition" class="container hidden">
     <div class="edition-header">
-      <h2 id="editionTitle">Daegon Awards 2017</h2>
+      <h2 id="editionTitle">Daegon Awards</h2>
       <button class="back-button" id="backButton">
         <i class="fas fa-arrow-left"></i> Back to Home
       </button>
@@ -673,7 +667,7 @@ footer {
         <h3 style="font-size: 24px; margin-bottom: 15px; color: var(--black);">Data Source</h3>
         <p style="font-size: 16px; line-height: 1.7; color: var(--gray); margin-bottom: 20px;">
           All award data is sourced from publicly available Google Sheets that document the nominations and winners 
-          for each edition of the Daegon Awards.
+          for each edition of the Daegon Awards from 2017 to 2025.
         </p>
         <a href="https://docs.google.com/spreadsheets/d/1DNb6uYi6K231-fhrSt3XPlaag8eG9ZFVHhvSXyjWCuk" 
            target="_blank" 
@@ -695,6 +689,7 @@ footer {
     <div class="footer-links">
       <a href="#" id="footerHome">Home</a>
       <a href="#" id="footerAbout">About</a>
+      <a href="https://docs.google.com/spreadsheets/d/1DNb6uYi6K231-fhrSt3XPlaag8eG9ZFVHhvSXyjWCuk" target="_blank">Data Source</a>
     </div>
     
     <div class="copyright">
@@ -715,6 +710,41 @@ const EDITIONS = {
     sheetId: "1DNb6uYi6K231-fhrSt3XPlaag8eG9ZFVHhvSXyjWCuk",
     gid: "912023648",
     name: "2018 Edition"
+  },
+  2019: {
+    sheetId: "1DNb6uYi6K231-fhrSt3XPlaag8eG9ZFVHhvSXyjWCuk",
+    gid: "221365296",
+    name: "2019 Edition"
+  },
+  2020: {
+    sheetId: "1DNb6uYi6K231-fhrSt3XPlaag8eG9ZFVHhvSXyjWCuk",
+    gid: "1123138246",
+    name: "2020 Edition"
+  },
+  2021: {
+    sheetId: "1DNb6uYi6K231-fhrSt3XPlaag8eG9ZFVHhvSXyjWCuk",
+    gid: "919977085",
+    name: "2021 Edition"
+  },
+  2022: {
+    sheetId: "1DNb6uYi6K231-fhrSt3XPlaag8eG9ZFVHhvSXyjWCuk",
+    gid: "2065423547",
+    name: "2022 Edition"
+  },
+  2023: {
+    sheetId: "1DNb6uYi6K231-fhrSt3XPlaag8eG9ZFVHhvSXyjWCuk",
+    gid: "1803569858",
+    name: "2023 Edition"
+  },
+  2024: {
+    sheetId: "1DNb6uYi6K231-fhrSt3XPlaag8eG9ZFVHhvSXyjWCuk",
+    gid: "1350904783",
+    name: "2024 Edition"
+  },
+  2025: {
+    sheetId: "1DNb6uYi6K231-fhrSt3XPlaag8eG9ZFVHhvSXyjWCuk",
+    gid: "1189047483",
+    name: "2025 Edition"
   }
 };
 
@@ -735,6 +765,7 @@ const editionContent = document.getElementById('editionContent');
 const artistContent = document.getElementById('artistContent');
 const editionTitle = document.getElementById('editionTitle');
 const artistTitle = document.getElementById('artistTitle');
+const editionsGrid = document.getElementById('editionsGrid');
 
 // Navigation links
 const homeLink = document.getElementById('homeLink');
@@ -835,6 +866,8 @@ async function fetchSheetData(year) {
     const proxyUrl = 'https://corsproxy.io/?';
     const targetUrl = `https://docs.google.com/spreadsheets/d/${edition.sheetId}/gviz/tq?tqx=out:json&gid=${edition.gid}`;
     
+    console.log(`Fetching data for ${year} edition...`);
+    
     const response = await fetch(proxyUrl + encodeURIComponent(targetUrl));
     
     if (!response.ok) {
@@ -884,6 +917,7 @@ async function fetchSheetData(year) {
     
     // Cache the data
     dataCache[cacheKey] = categories;
+    console.log(`Data for ${year} edition loaded successfully. Categories: ${Object.keys(categories).length}`);
     
     return categories;
   } catch (error) {
@@ -924,7 +958,7 @@ async function openEdition(year) {
   try {
     const categories = await fetchSheetData(year);
     
-    if (Object.keys(categories).length === 0) {
+    if (!categories || Object.keys(categories).length === 0) {
       editionContent.innerHTML = `
         <div class="empty-state">
           <i class="fas fa-trophy" style="font-size: 48px; color: var(--gold); margin-bottom: 20px;"></i>
@@ -942,6 +976,8 @@ async function openEdition(year) {
     for (const categoryName of sortedCategories) {
       const nominees = categories[categoryName];
       
+      if (!nominees || nominees.length === 0) continue;
+      
       // Sort: winners first, then alphabetically by artist
       nominees.sort((a, b) => {
         if (a.status === 'Winner' && b.status !== 'Winner') return -1;
@@ -958,8 +994,11 @@ async function openEdition(year) {
       `;
       
       for (const nominee of nominees) {
+        // Skip entries without artist name
+        if (!nominee.artist || nominee.artist.trim() === '') continue;
+        
         const isWinner = nominee.status === 'Winner';
-        const showFeature = nominee.feature && !NO_FEAT_CATEGORIES.includes(categoryName);
+        const showFeature = nominee.feature && nominee.feature.trim() !== '' && !NO_FEAT_CATEGORIES.includes(categoryName);
         
         html += `
           <div class="nominee-item ${isWinner ? 'winner' : ''}">
@@ -970,7 +1009,7 @@ async function openEdition(year) {
                   ${nominee.artist}
                 </a>
               </div>
-              ${nominee.work ? `<div class="nominee-work">${nominee.work}</div>` : ''}
+              ${nominee.work && nominee.work.trim() !== '' ? `<div class="nominee-work">${nominee.work}</div>` : ''}
               ${showFeature ? `<div class="nominee-feature">feat. ${nominee.feature}</div>` : ''}
             </div>
             <div class="nominee-status">
@@ -1012,7 +1051,12 @@ async function openArtist(encodedName) {
         const categories = await fetchSheetData(year);
         
         for (const [categoryName, nominees] of Object.entries(categories)) {
+          if (!nominees) continue;
+          
           for (const nominee of nominees) {
+            // Skip entries without artist name
+            if (!nominee.artist || nominee.artist.trim() === '') continue;
+            
             // Check if this artist is the main artist or a featured artist
             const isMainArtist = nominee.artist === artistName;
             const isFeaturedArtist = nominee.feature && nominee.feature.includes(artistName);
@@ -1052,6 +1096,10 @@ async function openArtist(encodedName) {
               <i class="fas fa-star"></i>
               <span>${nominations.length} Nominations</span>
             </div>
+            <div class="stat-item">
+              <i class="fas fa-calendar-alt"></i>
+              <span>${new Set(allNominations.map(n => n.year)).size} Editions</span>
+            </div>
           </div>
         </div>
       </div>
@@ -1067,6 +1115,9 @@ async function openArtist(encodedName) {
     `;
     
     if (wins.length > 0) {
+      // Sort wins by year (newest first)
+      wins.sort((a, b) => parseInt(b.year) - parseInt(a.year));
+      
       html += '<div class="award-list">';
       
       wins.forEach(win => {
@@ -1074,7 +1125,7 @@ async function openArtist(encodedName) {
           <div class="award-card">
             <div class="award-year">${win.year}</div>
             <div class="award-category">${win.category}</div>
-            ${win.work ? `<div class="award-work">${win.work}</div>` : ''}
+            ${win.work && win.work.trim() !== '' ? `<div class="award-work">${win.work}</div>` : ''}
             <div>
               <span class="award-status" style="background-color: var(--gold); color: white; padding: 4px 12px; border-radius: 15px; font-size: 12px; font-weight: 600;">
                 Winner • ${win.role}
@@ -1105,6 +1156,9 @@ async function openArtist(encodedName) {
     `;
     
     if (nominations.length > 0) {
+      // Sort nominations by year (newest first)
+      nominations.sort((a, b) => parseInt(b.year) - parseInt(a.year));
+      
       html += '<div class="award-list">';
       
       nominations.forEach(nomination => {
@@ -1112,7 +1166,7 @@ async function openArtist(encodedName) {
           <div class="award-card">
             <div class="award-year">${nomination.year}</div>
             <div class="award-category">${nomination.category}</div>
-            ${nomination.work ? `<div class="award-work">${nomination.work}</div>` : ''}
+            ${nomination.work && nomination.work.trim() !== '' ? `<div class="award-work">${nomination.work}</div>` : ''}
             <div>
               <span class="award-status" style="background-color: var(--light-gray); color: var(--gray); padding: 4px 12px; border-radius: 15px; font-size: 12px; font-weight: 600;">
                 Nominated • ${nomination.role}
@@ -1140,15 +1194,35 @@ async function openArtist(encodedName) {
   }
 }
 
-// ================= EVENT LISTENERS =================
-document.addEventListener('DOMContentLoaded', () => {
-  // Edition card clicks
+// ================= INITIALIZE EDITION CARDS =================
+function initializeEditionCards() {
+  const years = Object.keys(EDITIONS).sort((a, b) => parseInt(b) - parseInt(a));
+  
+  let html = '';
+  years.forEach(year => {
+    html += `
+      <div class="edition-card" data-year="${year}">
+        <div class="edition-year">${year}</div>
+        <div class="edition-label">EDITION</div>
+      </div>
+    `;
+  });
+  
+  editionsGrid.innerHTML = html;
+  
+  // Add event listeners to edition cards
   document.querySelectorAll('.edition-card').forEach(card => {
     card.addEventListener('click', () => {
       const year = card.getAttribute('data-year');
       openEdition(year);
     });
   });
+}
+
+// ================= EVENT LISTENERS =================
+document.addEventListener('DOMContentLoaded', () => {
+  // Initialize edition cards
+  initializeEditionCards();
   
   // Navigation
   homeLink.addEventListener('click', (e) => {
@@ -1175,7 +1249,11 @@ document.addEventListener('DOMContentLoaded', () => {
   backButton.addEventListener('click', showHome);
   backButtonArtist.addEventListener('click', () => {
     // Go back to the last viewed edition or home
-    if (editionTitle.textContent.includes('2017') || editionTitle.textContent.includes('2018')) {
+    if (editionTitle.textContent.includes('2017') || editionTitle.textContent.includes('2018') || 
+        editionTitle.textContent.includes('2019') || editionTitle.textContent.includes('2020') ||
+        editionTitle.textContent.includes('2021') || editionTitle.textContent.includes('2022') ||
+        editionTitle.textContent.includes('2023') || editionTitle.textContent.includes('2024') ||
+        editionTitle.textContent.includes('2025')) {
       const year = editionTitle.textContent.match(/\d{4}/)[0];
       openEdition(year);
     } else {
